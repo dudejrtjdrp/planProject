@@ -20,6 +20,7 @@ pnpm-debug.log*
 
 # local env files (sensitive)
 .env
+.env.example
 .env.local
 .env.development.local
 .env.test.local
