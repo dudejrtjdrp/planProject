@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PostInput } from "@/components/posts/post-input";
 import { PostList, type Post } from "@/components/posts/post-list";
+import { PageLoadingBar } from "@/components/ui/page-loading-bar";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 
 function addPostUnique(previous: Post[], incoming: Post): Post[] {
@@ -30,6 +31,7 @@ export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [clientError, setClientError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     const selectedProfile = window.localStorage.getItem("currentUser");
@@ -65,16 +67,18 @@ export default function HomePage() {
 
       if (error) {
         console.error("Failed to load posts", error);
+        setClientError("팀 메모를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
         setIsLoading(false);
         return;
       }
 
+      setClientError(null);
       setPosts((data ?? []) as Post[]);
       setIsLoading(false);
     }
 
     void loadPosts();
-  }, [currentUser]);
+  }, [currentUser, retryKey]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -207,7 +211,16 @@ export default function HomePage() {
   }
 
   if (!currentUser) {
-    return null;
+    return (
+      <main className="w-full">
+        <section className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+          <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
+            <PageLoadingBar />
+            <p className="mt-3 text-base text-gray-700">프로필 정보를 불러오는 중...</p>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -241,7 +254,17 @@ export default function HomePage() {
 
         {clientError ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-base text-rose-700 shadow-sm">
-            {clientError}
+            <p>{clientError}</p>
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setRetryKey((prev) => prev + 1)}
+                disabled={isLoading}
+                className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                다시 시도
+              </button>
+            </div>
           </div>
         ) : null}
 

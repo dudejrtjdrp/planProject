@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { deleteSwotItemAction, updateSwotItemContentAction } from "@/features/swot/actions/swot-actions";
@@ -17,7 +16,6 @@ type SwotItemCardProps = {
 };
 
 export function SwotItemCard({ item, projectId, profileById }: SwotItemCardProps) {
-  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(item.content);
 
@@ -36,7 +34,6 @@ export function SwotItemCard({ item, projectId, profileById }: SwotItemCardProps
     try {
       await deleteSwotItemAction(formData);
       pushToast("SWOT 항목이 삭제되었습니다.");
-      router.refresh();
     } catch (error) {
       const message = error instanceof Error ? error.message : "SWOT 항목 삭제에 실패했습니다.";
       pushToast(message, "error");
@@ -48,7 +45,6 @@ export function SwotItemCard({ item, projectId, profileById }: SwotItemCardProps
       await updateSwotItemContentAction(formData);
       setIsEditing(false);
       pushToast("SWOT 항목이 수정되었습니다.");
-      router.refresh();
     } catch (error) {
       const message = error instanceof Error ? error.message : "SWOT 항목 수정에 실패했습니다.";
       pushToast(message, "error");

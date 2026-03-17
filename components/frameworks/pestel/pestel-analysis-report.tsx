@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import {
   createPestelItemAction,
@@ -106,7 +105,6 @@ function groupItems(items: PestelItem[]): Record<PestelFactor, PestelItem[]> {
 }
 
 export function PestelAnalysisReport({ projectId, projectFrameworkId, items, profiles }: PestelAnalysisReportProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [boardItems, setBoardItems] = useState<PestelItem[]>(items);
   const [createFactor, setCreateFactor] = useState<PestelFactor | null>(null);
@@ -195,7 +193,6 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
         setCreateDraft("");
         setCreateFactor(null);
         pushToast("PESTEL 항목이 추가되었습니다.");
-        router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "PESTEL 항목 추가에 실패했습니다.";
         pushToast(message, "error");
@@ -225,7 +222,6 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
         setEditingItemId(null);
         setEditingDraft("");
         pushToast("PESTEL 항목이 수정되었습니다.");
-        router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "PESTEL 항목 수정에 실패했습니다.";
         pushToast(message, "error");
@@ -246,7 +242,6 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
         formData.set("itemId", itemId);
         await deletePestelItemAction(formData);
         pushToast("PESTEL 항목이 삭제되었습니다.");
-        router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "PESTEL 항목 삭제에 실패했습니다.";
         pushToast(message, "error");
