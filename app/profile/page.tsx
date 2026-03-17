@@ -29,7 +29,9 @@ function ProfilePageContent() {
 
   useEffect(() => {
     const currentUser = window.localStorage.getItem(CURRENT_USER_KEY);
-    if (currentUser) {
+    const isSwitchMode = searchParams.get("switch") === "1";
+
+    if (currentUser && !isSwitchMode) {
       const next = searchParams.get("next");
       router.replace(next && next.startsWith("/") ? next : "/");
     }

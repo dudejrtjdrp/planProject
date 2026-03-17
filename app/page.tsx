@@ -228,7 +228,7 @@ export default function HomePage() {
                 Projects
               </Link>
               <Link
-                href="/profile"
+                href="/profile?switch=1"
                 className="rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-blue-600 active:scale-95"
               >
                 Switch Profile
