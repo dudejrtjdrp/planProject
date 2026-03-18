@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { McKinsey7SAnalysisReport } from "@/components/frameworks/mckinsey-7s/mckinsey-7s-analysis-report";
+import { McKinsey7SCanvas } from "@/components/frameworks/mckinsey-7s/mckinsey-7s-canvas";
 import { BackStepButton } from "@/components/ui/back-step-button";
 import { FrameworkVersionManager } from "@/components/ui/framework-version-manager";
 import { getFrameworkByKey, getFrameworkByVersion, getFrameworkVersionsByKey } from "@/features/frameworks/data/framework-repository";
@@ -134,9 +134,11 @@ export default async function ProjectMcKinsey7SPage({ params, searchParams }: Pa
 				versions={frameworkVersions}
 			/>
 
-			<McKinsey7SAnalysisReport
+			<McKinsey7SCanvas
+				key={framework?.id ?? "mckinsey-7s-empty"}
 				projectId={id}
 				frameworkId={framework?.id ?? null}
+				currentVersion={framework?.version ?? null}
 				initialData={parseData(framework?.title ?? null)}
 			/>
 		</div>

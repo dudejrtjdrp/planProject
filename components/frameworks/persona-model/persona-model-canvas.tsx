@@ -20,10 +20,11 @@ type PersonaData = {
 type PersonaModelCanvasProps = {
 	projectId: string;
 	frameworkId: string | null;
+	currentVersion: number | null;
 	initialData: PersonaData;
 };
 
-export function PersonaModelCanvas({ projectId, frameworkId, initialData }: PersonaModelCanvasProps) {
+export function PersonaModelCanvas({ projectId, frameworkId, currentVersion, initialData }: PersonaModelCanvasProps) {
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 	const [data, setData] = useState<PersonaData>(initialData);
@@ -69,6 +70,13 @@ export function PersonaModelCanvas({ projectId, frameworkId, initialData }: Pers
 
 			<div>
 				<p className="text-sm text-gray-400 print:text-xs">Framework · Persona Model</p>
+				{currentVersion ? (
+					<p className="mt-2">
+						<span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+							v{currentVersion}
+						</span>
+					</p>
+				) : null}
 				<h2 className="mt-1 text-3xl font-bold tracking-tight text-gray-900 print:text-2xl">Human-Centered Persona Board</h2>
 			</div>
 

@@ -103,8 +103,10 @@ export default async function ProjectDoubleMatrixPage({ params, searchParams }: 
 			/>
 
 			<DoubleMatrixBoard
+				key={framework?.id ?? "double-matrix-empty"}
 				projectId={id}
 				frameworkId={framework?.id ?? null}
+				currentVersion={framework?.version ?? null}
 				initialData={parseData(framework?.title ?? null)}
 			/>
 		</div>

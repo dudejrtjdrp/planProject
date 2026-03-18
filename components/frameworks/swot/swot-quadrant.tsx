@@ -8,6 +8,7 @@ import type { SwotItem, SwotType } from "@/features/swot/types/swot-item";
 
 type SwotQuadrantProps = {
   projectId: string;
+  projectFrameworkId: string | null;
   type: SwotType;
   title: string;
   description: string;
@@ -18,6 +19,7 @@ type SwotQuadrantProps = {
 
 export function SwotQuadrant({
   projectId,
+  projectFrameworkId,
   type,
   title,
   description,
@@ -44,7 +46,12 @@ export function SwotQuadrant({
         <p className="text-sm text-gray-400 print:text-xs">{description}</p>
       </header>
 
-      <SwotCreateForm projectId={projectId} type={type} placeholder={`${title} \uc544\uc774\ud15c\uc744 \uc785\ub825\ud558\uc138\uc694`} />
+      <SwotCreateForm
+        projectId={projectId}
+        projectFrameworkId={projectFrameworkId}
+        type={type}
+        placeholder={`${title} \uc544\uc774\ud15c\uc744 \uc785\ub825\ud558\uc138\uc694`}
+      />
 
       <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
         <div className="mt-5 space-y-3 print:mt-3 print:space-y-2">

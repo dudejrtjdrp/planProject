@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { SwotQuadrant } from "./swot-quadrant";
@@ -12,6 +12,7 @@ import { fromSwotDbQuadrant, parseSwotContent, type SwotItem, type SwotType } fr
 type SwotBoardProps = {
   projectId: string;
   projectFrameworkId: string | null;
+  currentVersion: number | null;
   items: SwotItem[];
   profiles: Profile[];
 };
@@ -65,10 +66,14 @@ function toFlatItems(grouped: Record<SwotType, SwotItem[]>): SwotItem[] {
   return [...grouped.STRENGTH, ...grouped.WEAKNESS, ...grouped.OPPORTUNITY, ...grouped.THREAT];
 }
 
-export function SwotBoard({ projectId, projectFrameworkId, items, profiles }: SwotBoardProps) {
+export function SwotBoard({ projectId, projectFrameworkId, currentVersion, items, profiles }: SwotBoardProps) {
   const [isPending, startTransition] = useTransition();
   const [boardItems, setBoardItems] = useState<SwotItem[]>(items);
   const pendingMutationIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    setBoardItems(items);
+  }, [items]);
 
   const groupedItems = useMemo(() => toGroupedItems(boardItems), [boardItems]);
 
@@ -229,9 +234,16 @@ export function SwotBoard({ projectId, projectFrameworkId, items, profiles }: Sw
   return (
     <section className="space-y-6 print:space-y-4">
       <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm print:shadow-none print:p-6">
-        <h2 className="text-xl font-semibold text-gray-900 print:text-lg">SWOT Board</h2>
-        <p className="mt-2 text-base text-gray-700 print:text-sm">\ud578\uc2ec \uc804\ub7b5 \uc778\uc0ac\uc774\ud2b8\ub97c 4\uac1c \ucd95\uc73c\ub85c \ube60\ub978\uac10\ub824 \uc815\ub9ac\ud558\uc138\uc694.</p>
-        {isPending ? <p className="mt-2 text-sm text-gray-400 print:hidden\">\uc800\uc7a5 \uc911...</p> : null}
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-gray-900 print:text-lg">SWOT Board</h2>
+          {currentVersion ? (
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+              v{currentVersion}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-2 text-base text-gray-700 print:text-sm">핵심 전략 인사이트를 4개 축으로 빠르게 정리하세요.</p>
+        {isPending ? <p className="mt-2 text-sm text-gray-400 print:hidden">저장 중...</p> : null}
       </div>
 
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -240,6 +252,7 @@ export function SwotBoard({ projectId, projectFrameworkId, items, profiles }: Sw
             <SwotQuadrant
               key={quadrant.type}
               projectId={projectId}
+              projectFrameworkId={projectFrameworkId}
               type={quadrant.type}
               title={quadrant.title}
               description={quadrant.description}

@@ -26,10 +26,11 @@ type SevenSKey = keyof SevenSData;
 type McKinsey7SCanvasProps = {
 	projectId: string;
 	frameworkId: string | null;
+	currentVersion: number | null;
 	initialData: SevenSData;
 };
 
-export function McKinsey7SCanvas({ projectId, frameworkId, initialData }: McKinsey7SCanvasProps) {
+export function McKinsey7SCanvas({ projectId, frameworkId, currentVersion, initialData }: McKinsey7SCanvasProps) {
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 	const [data, setData] = useState<SevenSData>(initialData);
@@ -37,6 +38,7 @@ export function McKinsey7SCanvas({ projectId, frameworkId, initialData }: McKins
 
 	useEffect(() => {
 		setData(initialData);
+		setSelectedNode(null);
 	}, [initialData]);
 
 	if (!frameworkId) {
@@ -156,6 +158,13 @@ export function McKinsey7SCanvas({ projectId, frameworkId, initialData }: McKins
 
 				<div className="text-center">
 					<p className="text-sm text-gray-400">Framework · McKinsey 7S</p>
+					{currentVersion ? (
+						<p className="mt-2">
+							<span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+								v{currentVersion}
+							</span>
+						</p>
+					) : null}
 					<h2 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Organizational Alignment Map</h2>
 				</div>
 

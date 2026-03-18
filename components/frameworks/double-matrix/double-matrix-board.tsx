@@ -17,10 +17,11 @@ type MatrixData = {
 type DoubleMatrixBoardProps = {
   projectId: string;
   frameworkId: string | null;
+  currentVersion: number | null;
   initialData: MatrixData;
 };
 
-export function DoubleMatrixBoard({ projectId, frameworkId, initialData }: DoubleMatrixBoardProps) {
+export function DoubleMatrixBoard({ projectId, frameworkId, currentVersion, initialData }: DoubleMatrixBoardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [data, setData] = useState<MatrixData>(initialData);
@@ -63,6 +64,13 @@ export function DoubleMatrixBoard({ projectId, frameworkId, initialData }: Doubl
       )}
       <div>
         <p className="text-sm text-gray-400 print:text-xs">Framework · Double Matrix</p>
+        {currentVersion ? (
+          <p className="mt-2">
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+              v{currentVersion}
+            </span>
+          </p>
+        ) : null}
         <h2 className="mt-1 text-3xl font-bold tracking-tight text-gray-900 print:text-2xl">2x2 Strategic Matrix</h2>
       </div>
 

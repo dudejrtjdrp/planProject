@@ -8,11 +8,12 @@ import { CURRENT_USER_KEY } from "@/lib/config/profile-storage";
 
 type SwotCreateFormProps = {
   projectId: string;
+  projectFrameworkId: string | null;
   type: SwotType;
   placeholder: string;
 };
 
-export function SwotCreateForm({ projectId, type, placeholder }: SwotCreateFormProps) {
+export function SwotCreateForm({ projectId, projectFrameworkId, type, placeholder }: SwotCreateFormProps) {
   const [currentUser, setCurrentUser] = useState<string>("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -27,6 +28,7 @@ export function SwotCreateForm({ projectId, type, placeholder }: SwotCreateFormP
   return (
     <form action={createSwotItemAction} className="space-y-3">
       <input type="hidden" name="projectId" value={projectId} />
+      <input type="hidden" name="projectFrameworkId" value={projectFrameworkId ?? ""} />
       <input type="hidden" name="type" value={type} />
       <input type="hidden" name="createdBy" value={currentUser} />
       <input type="hidden" name="content" value={structuredContent} />

@@ -11,6 +11,7 @@ import type { Profile } from "@/features/profiles/types/profile";
 type PestelBoardProps = {
   projectId: string;
   projectFrameworkId: string | null;
+  currentVersion: number | null;
   items: PestelItem[];
   profiles: Profile[];
 };
@@ -89,7 +90,7 @@ function toPestelOrderPayload(grouped: Record<PestelFactor, PestelItem[]>) {
   );
 }
 
-export function PestelBoard({ projectId, projectFrameworkId, items, profiles }: PestelBoardProps) {
+export function PestelBoard({ projectId, projectFrameworkId, currentVersion, items, profiles }: PestelBoardProps) {
   const [isPending, startTransition] = useTransition();
   const [boardItems, setBoardItems] = useState<PestelItem[]>(items);
 
@@ -197,7 +198,14 @@ export function PestelBoard({ projectId, projectFrameworkId, items, profiles }: 
   return (
     <section className="space-y-6">
       <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-900">PESTEL Board</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-gray-900">PESTEL Board</h2>
+          {currentVersion ? (
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+              v{currentVersion}
+            </span>
+          ) : null}
+        </div>
         <p className="mt-2 text-base text-gray-700">
           6가지 외부 환경 요인을 분석해 전략적 기회와 위협을 파악하세요.
         </p>
