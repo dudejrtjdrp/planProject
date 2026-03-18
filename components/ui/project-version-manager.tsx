@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FormPendingOverlay } from "@/components/ui/form-pending-overlay";
 import { pushToast } from "@/lib/utils/toast";
@@ -17,10 +17,31 @@ export function ProjectVersionManager({ projectId, currentVersion, versions }: P
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const pendingVersionRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isNavigating) {
+      return;
+    }
+
+    if (pendingVersionRef.current === null || currentVersion === pendingVersionRef.current) {
+      setIsNavigating(false);
+      pendingVersionRef.current = null;
+    }
+  }, [currentVersion, isNavigating]);
 
   function goVersion(version: number) {
+    if (currentVersion === version) {
+      setIsNavigating(false);
+      pendingVersionRef.current = null;
+      return;
+    }
+
+    pendingVersionRef.current = version;
     setIsNavigating(true);
-    router.push(`/project/${projectId}?pv=${version}`);
+    startTransition(() => {
+      router.push(`/project/${projectId}?pv=${version}`);
+    });
   }
 
   function handleCreateVersion() {
@@ -28,6 +49,7 @@ export function ProjectVersionManager({ projectId, currentVersion, versions }: P
       try {
         const result = await createProjectVersionAction(projectId);
         pushToast(`프로젝트 v${result.version} 스냅샷 생성 완료`);
+        pendingVersionRef.current = result.version;
         setIsNavigating(true);
         router.push(`/project/${projectId}?pv=${result.version}`);
       } catch (error) {

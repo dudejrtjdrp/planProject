@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { RouteReadySignal } from "@/components/ui/route-ready-signal";
 import { CURRENT_USER_KEY } from "@/lib/config/profile-storage";
 import { FIXED_PROFILE_COLORS, GUEST_PROFILE_NAME } from "@/features/profiles/types/profile";
 
@@ -48,6 +49,7 @@ function ProfilePageContent() {
 
   return (
     <main className="min-h-screen bg-[#F9FAFB] px-8 py-16">
+      <RouteReadySignal />
       <section className="mx-auto w-full max-w-5xl space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">프로필 선택</h1>
