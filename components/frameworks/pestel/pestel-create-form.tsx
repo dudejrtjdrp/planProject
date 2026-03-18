@@ -26,6 +26,7 @@ export function PestelCreateForm({ projectId, projectFrameworkId, factor, placeh
   }, []);
 
   async function handleCreate(formData: FormData) {
+    pushToast("저장 중...");
     try {
       await createPestelItemAction(formData);
       pushToast("PESTEL 항목이 추가되었습니다.");
@@ -50,6 +51,18 @@ export function PestelCreateForm({ projectId, projectFrameworkId, factor, placeh
         placeholder={placeholder}
         className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
       />
+      <div className="space-y-1">
+        <label htmlFor={`pestel-attachment-${factor}`} className="text-xs font-medium text-gray-500">
+          첨부 파일 (이미지/PDF, 최대 10MB)
+        </label>
+        <input
+          id={`pestel-attachment-${factor}`}
+          type="file"
+          name="attachment"
+          accept="image/*,application/pdf"
+          className="block w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-blue-600 hover:file:bg-blue-100"
+        />
+      </div>
       <div className="flex justify-end">
         <FormSubmitButton
           idleText="추가"

@@ -109,6 +109,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
   const [boardItems, setBoardItems] = useState<PestelItem[]>(items);
   const [createFactor, setCreateFactor] = useState<PestelFactor | null>(null);
   const [createDraft, setCreateDraft] = useState("");
+  const [createAttachment, setCreateAttachment] = useState<File | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
@@ -131,6 +132,9 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
           id: row.id,
           factor: row.factor,
           content: row.content,
+          attachmentUrl: row.attachment_url,
+          attachmentName: row.attachment_name,
+          attachmentMimeType: row.attachment_mime_type,
           position: row.position ?? 0,
           createdBy: row.created_by,
           projectFrameworkId: row.project_framework_id,
@@ -146,6 +150,9 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
             ? {
                 ...item,
                 content: row.content,
+                attachmentUrl: row.attachment_url,
+                attachmentName: row.attachment_name,
+                attachmentMimeType: row.attachment_mime_type,
                 updatedAt: row.updated_at,
               }
             : item
@@ -181,6 +188,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
       return;
     }
 
+    pushToast("저장 중...");
     startTransition(async () => {
       try {
         const formData = new FormData();
@@ -189,8 +197,12 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
         formData.set("factor", factor);
         formData.set("content", content);
         formData.set("createdBy", selectedUser);
+        if (createAttachment) {
+          formData.set("attachment", createAttachment);
+        }
         await createPestelItemAction(formData);
         setCreateDraft("");
+        setCreateAttachment(null);
         setCreateFactor(null);
         pushToast("PESTEL 항목이 추가되었습니다.");
       } catch (error) {
@@ -212,6 +224,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
       return;
     }
 
+    pushToast("저장 중...");
     startTransition(async () => {
       try {
         const formData = new FormData();
@@ -235,6 +248,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
       return;
     }
 
+    pushToast("삭제 중...");
     startTransition(async () => {
       try {
         const formData = new FormData();
@@ -294,6 +308,24 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                         placeholder="분석 내용을 입력하세요"
                         className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
                       />
+                      <div className="space-y-1">
+                        <label
+                          htmlFor={`pestel-attachment-${factorConfig.factor}`}
+                          className="block text-xs font-medium text-gray-500"
+                        >
+                          첨부 파일 (이미지/PDF, 최대 10MB)
+                        </label>
+                        <input
+                          id={`pestel-attachment-${factorConfig.factor}`}
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(event) => {
+                            const nextFile = event.target.files?.[0] ?? null;
+                            setCreateAttachment(nextFile);
+                          }}
+                          className="block w-full cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-blue-600 hover:file:bg-blue-100"
+                        />
+                      </div>
                       <div className="mt-2 flex items-center gap-2">
                         <button
                           type="button"
@@ -308,6 +340,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                           onClick={() => {
                             setCreateFactor(null);
                             setCreateDraft("");
+                            setCreateAttachment(null);
                           }}
                           className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
                         >
@@ -360,7 +393,29 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                               </>
                             ) : (
                               <div className="flex items-start justify-between gap-3">
-                                <p className="text-base font-medium text-gray-900">{item.content}</p>
+                                <div className="space-y-2">
+                                  <p className="text-base font-medium text-gray-900">{item.content}</p>
+                                  {item.attachmentUrl ? (
+                                    <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                      {item.attachmentMimeType?.startsWith("image/") ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                          src={item.attachmentUrl}
+                                          alt={item.attachmentName ?? "PESTEL 첨부 이미지"}
+                                          className="max-h-72 w-auto rounded-md border border-gray-200 object-contain"
+                                        />
+                                      ) : null}
+                                      <a
+                                        href={item.attachmentUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center text-xs font-medium text-blue-600 underline-offset-2 hover:underline"
+                                      >
+                                        첨부 열기{item.attachmentName ? `: ${item.attachmentName}` : ""}
+                                      </a>
+                                    </div>
+                                  ) : null}
+                                </div>
                                 <div className="flex items-center gap-1">
                                   <button
                                     type="button"
@@ -399,6 +454,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                       onClick={() => {
                         setCreateFactor(factorConfig.factor);
                         setCreateDraft("");
+                        setCreateAttachment(null);
                       }}
                       className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 w-full justify-center"
                     >

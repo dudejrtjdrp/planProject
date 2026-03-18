@@ -23,6 +23,7 @@ export function ProjectSummary({ project, projectVersion }: ProjectSummaryProps)
   const doubleMatrixHref = `/project/${project.id}/double-matrix${pvParam}`;
   const personaModelHref = `/project/${project.id}/persona-model${pvParam}`;
   const reportHref = `/project/${project.id}/report${pvParam}`;
+  const meetingNotesHref = `/project/${project.id}/meeting-notes${pvParam}`;
 
   async function handleUpdateProject(formData: FormData) {
     try {
@@ -70,6 +71,7 @@ export function ProjectSummary({ project, projectVersion }: ProjectSummaryProps)
           <FrameworkLinkButton href={mckinsey7sHref} label="McKinsey 7S" />
           <FrameworkLinkButton href={doubleMatrixHref} label="Double Matrix" />
           <FrameworkLinkButton href={personaModelHref} label="Persona Model" />
+          <FrameworkLinkButton href={meetingNotesHref} label="프레임워크 회의록" />
           <FrameworkLinkButton href={reportHref} label="분석 리포트" />
         </div>
       </div>

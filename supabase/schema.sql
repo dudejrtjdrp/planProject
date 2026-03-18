@@ -12,6 +12,7 @@
 --   public.project_frameworks– per-project framework module attachments (versioned)
 --   public.swot_items        – items inside a SWOT analysis
 --   public.pestel_items      – items inside a PESTEL analysis
+--   public.framework_meeting_notes – framework-specific meeting minutes
 --   public.posts             – real-time team feed
 --
 -- Views
@@ -23,6 +24,7 @@
 --       framework type can exist per project.
 --   v3: pestel_items table added.
 --   v4: project_versions table added.
+--   v5: pestel_items attachment columns + framework_meeting_notes table added.
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -185,6 +187,9 @@ create table if not exists public.pestel_items (
   created_by           uuid        references public.profiles(id) on delete set null,
   factor               text        not null,
   content              text        not null,
+  attachment_url       text,
+  attachment_name      text,
+  attachment_mime_type text,
   position             int         not null default 0,
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now(),
@@ -207,7 +212,36 @@ before update on public.pestel_items
 for each row execute function public.set_updated_at();
 
 -- ---------------------------------------------------------------------------
--- 6. posts
+-- 6. framework_meeting_notes
+--    Project-level meeting minutes linked to each framework type.
+-- ---------------------------------------------------------------------------
+create table if not exists public.framework_meeting_notes (
+  id            uuid        primary key default gen_random_uuid(),
+  project_id    uuid        not null references public.projects(id) on delete cascade,
+  framework_key text        not null,
+  title         text        not null,
+  content       text        not null,
+  meeting_date  date        not null default current_date,
+  created_by    uuid        references public.profiles(id) on delete set null,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+
+  constraint framework_meeting_notes_framework_key_check
+    check (framework_key in ('swot', 'pestel', 'mckinsey_7s', 'matrix_2x2', 'persona_model', 'competitor_mapping'))
+);
+
+create index if not exists idx_framework_meeting_notes_project_id
+  on public.framework_meeting_notes(project_id);
+
+create index if not exists idx_framework_meeting_notes_project_framework_date
+  on public.framework_meeting_notes(project_id, framework_key, meeting_date desc, created_at desc);
+
+create trigger trg_framework_meeting_notes_set_updated_at
+before update on public.framework_meeting_notes
+for each row execute function public.set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- 7. posts
 --    Real-time team feed. Supabase Realtime enabled.
 -- ---------------------------------------------------------------------------
 create table if not exists public.posts (

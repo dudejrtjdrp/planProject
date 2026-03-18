@@ -9,6 +9,9 @@ type PestelRealtimeRow = {
   project_framework_id: string;
   factor: PestelFactor;
   content: string;
+  attachment_url: string | null;
+  attachment_name: string | null;
+  attachment_mime_type: string | null;
   position?: number;
   created_by: string | null;
   created_at: string;

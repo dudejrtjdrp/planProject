@@ -9,6 +9,9 @@ type PestelItemRow = {
   created_by: string | null;
   factor: PestelDbFactor;
   content: string;
+  attachment_url: string | null;
+  attachment_name: string | null;
+  attachment_mime_type: string | null;
   position: number;
   created_at: string;
   updated_at: string;
@@ -21,6 +24,9 @@ function mapPestelItemRow(row: PestelItemRow): PestelItem {
     createdBy: row.created_by,
     factor: fromPestelDbFactor(row.factor),
     content: row.content,
+    attachmentUrl: row.attachment_url,
+    attachmentName: row.attachment_name,
+    attachmentMimeType: row.attachment_mime_type,
     position: row.position,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -46,7 +52,9 @@ export async function getPestelItems(projectId: string): Promise<PestelItem[]> {
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("pestel_items")
-    .select("id, project_framework_id, created_by, factor, content, position, created_at, updated_at")
+    .select(
+      "id, project_framework_id, created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
+    )
     .eq("project_framework_id", framework.id)
     .order("factor", { ascending: true })
     .order("position", { ascending: true })
@@ -63,7 +71,9 @@ export async function getPestelItemsByFrameworkId(projectFrameworkId: string): P
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("pestel_items")
-    .select("id, project_framework_id, created_by, factor, content, position, created_at, updated_at")
+    .select(
+      "id, project_framework_id, created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
+    )
     .eq("project_framework_id", projectFrameworkId)
     .order("factor", { ascending: true })
     .order("position", { ascending: true })
@@ -81,6 +91,11 @@ export async function createPestelItem(
   factor: PestelFactor,
   content: string,
   createdBy: string,
+  attachment?: {
+    url: string;
+    name: string;
+    mimeType: string;
+  },
   projectFrameworkId?: string,
 ): Promise<PestelItem> {
   const supabase = createSupabaseServerClient();
@@ -109,9 +124,14 @@ export async function createPestelItem(
       created_by: createdBy,
       factor: dbFactor,
       content,
+      attachment_url: attachment?.url ?? null,
+      attachment_name: attachment?.name ?? null,
+      attachment_mime_type: attachment?.mimeType ?? null,
       position: nextPosition,
     })
-    .select("id, project_framework_id, created_by, factor, content, position, created_at, updated_at")
+    .select(
+      "id, project_framework_id, created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
+    )
     .single();
 
   if (error) {
@@ -137,7 +157,9 @@ export async function updatePestelItemContent(itemId: string, content: string): 
     .from("pestel_items")
     .update({ content })
     .eq("id", itemId)
-    .select("id, project_framework_id, created_by, factor, content, position, created_at, updated_at")
+    .select(
+      "id, project_framework_id, created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
+    )
     .single();
 
   if (error) {
@@ -175,7 +197,7 @@ export async function clonePestelItemsToFramework(
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("pestel_items")
-    .select("created_by, factor, content, position")
+    .select("created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position")
     .eq("project_framework_id", sourceFrameworkId)
     .order("factor", { ascending: true })
     .order("position", { ascending: true })
@@ -195,6 +217,9 @@ export async function clonePestelItemsToFramework(
     created_by: item.created_by,
     factor: item.factor,
     content: item.content,
+    attachment_url: item.attachment_url,
+    attachment_name: item.attachment_name,
+    attachment_mime_type: item.attachment_mime_type,
     position: item.position,
   }));
 

@@ -23,6 +23,9 @@ export type PestelItem = {
   createdBy: string | null;
   factor: PestelFactor;
   content: string;
+  attachmentUrl: string | null;
+  attachmentName: string | null;
+  attachmentMimeType: string | null;
   position: number;
   createdAt: string;
   updatedAt: string;

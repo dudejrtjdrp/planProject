@@ -31,6 +31,7 @@ export function PestelItemCard({ item, projectId, profileById }: PestelItemCardP
   };
 
   const author = item.createdBy ? profileById.get(item.createdBy) : null;
+  const isImageAttachment = Boolean(item.attachmentUrl && item.attachmentMimeType?.startsWith("image/"));
 
   async function handleDelete(formData: FormData) {
     try {
@@ -96,7 +97,29 @@ export function PestelItemCard({ item, projectId, profileById }: PestelItemCardP
             </div>
           </form>
         ) : (
-          <p className="text-sm leading-relaxed text-gray-700">{item.content}</p>
+          <div className="space-y-2">
+            <p className="text-sm leading-relaxed text-gray-700">{item.content}</p>
+            {item.attachmentUrl ? (
+              <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                {isImageAttachment ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.attachmentUrl}
+                    alt={item.attachmentName ?? "PESTEL 첨부 이미지"}
+                    className="max-h-60 w-auto rounded-md border border-gray-200 object-contain"
+                  />
+                ) : null}
+                <a
+                  href={item.attachmentUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center text-xs font-medium text-blue-600 underline-offset-2 hover:underline"
+                >
+                  첨부 열기{item.attachmentName ? `: ${item.attachmentName}` : ""}
+                </a>
+              </div>
+            ) : null}
+          </div>
         )}
         {author ? (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600">
