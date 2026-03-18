@@ -26,13 +26,13 @@ type PageProps = {
 
 /* ---------- JSON helpers ---------- */
 type SevenSData = {
-  sharedValues: string;
-  strategy: string;
-  structure: string;
-  systems: string;
-  style: string;
-  staff: string;
-  skills: string;
+  sharedValues: { title: string; description: string };
+  strategy: { title: string; description: string };
+  structure: { title: string; description: string };
+  systems: { title: string; description: string };
+  style: { title: string; description: string };
+  staff: { title: string; description: string };
+  skills: { title: string; description: string };
 };
 type MatrixData = { xAxis: string; yAxis: string; q1: string; q2: string; q3: string; q4: string };
 type PersonaData = {
@@ -49,9 +49,45 @@ type PersonaData = {
 };
 
 function parseSevenS(raw: string | null): SevenSData {
-  const d: SevenSData = { sharedValues: "", strategy: "", structure: "", systems: "", style: "", staff: "", skills: "" };
+  const d: SevenSData = {
+    sharedValues: { title: "", description: "" },
+    strategy: { title: "", description: "" },
+    structure: { title: "", description: "" },
+    systems: { title: "", description: "" },
+    style: { title: "", description: "" },
+    staff: { title: "", description: "" },
+    skills: { title: "", description: "" },
+  };
   if (!raw) return d;
-  try { return { ...d, ...(JSON.parse(raw) as Partial<SevenSData>) }; } catch { return d; }
+  try {
+    const parsed = JSON.parse(raw) as Partial<SevenSData> & Record<string, unknown>;
+    const normalize = (key: keyof SevenSData) => {
+      const incoming = parsed[key] as unknown;
+      if (typeof incoming === "string") {
+        return { title: "", description: incoming };
+      }
+      if (incoming && typeof incoming === "object") {
+        const node = incoming as { title?: string; description?: string };
+        return {
+          title: node.title ?? "",
+          description: node.description ?? "",
+        };
+      }
+      return d[key];
+    };
+
+    return {
+      sharedValues: normalize("sharedValues"),
+      strategy: normalize("strategy"),
+      structure: normalize("structure"),
+      systems: normalize("systems"),
+      style: normalize("style"),
+      staff: normalize("staff"),
+      skills: normalize("skills"),
+    };
+  } catch {
+    return d;
+  }
 }
 function parseMatrix(raw: string | null): MatrixData {
   const d: MatrixData = { xAxis: "", yAxis: "", q1: "", q2: "", q3: "", q4: "" };
@@ -271,13 +307,18 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
               { label: "Opportunity", type: "OPPORTUNITY" as const, bg: "bg-green-50"  },
               { label: "Threat",      type: "THREAT"      as const, bg: "bg-yellow-50" },
             ]).map(({ label, type, bg }) => {
-              const items = swotItems.filter((i) => i.type === type).map((i) => i.content);
+              const items = swotItems.filter((i) => i.type === type);
               return (
                 <article key={label} className={`rounded-2xl p-6 ${bg}`}>
                   <h3 className="font-semibold text-gray-900">{label}</h3>
                   {items.length ? (
                     <ul className="mt-3 space-y-1 text-sm text-gray-700">
-                      {items.map((t, i) => <li key={i}>• {t}</li>)}
+                      {items.map((item) => (
+                        <li key={item.id}>
+                          • <span className="font-semibold">{item.title}</span>
+                          {item.description ? ` - ${item.description}` : ""}
+                        </li>
+                      ))}
                     </ul>
                   ) : (
                     <p className="mt-3 text-sm text-gray-400">항목 없음</p>
@@ -304,7 +345,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
           </div>
           <div className="space-y-3">
             {pestelFactors.map(({ factor, label, bar }) => {
-              const items = pestelItems.filter((i) => i.factor === factor).map((i) => i.content);
+              const items = pestelItems.filter((i) => i.factor === factor);
               return (
                 <div key={factor} className="relative overflow-hidden rounded-2xl bg-gray-50 p-5">
                   <span className={`absolute left-0 top-0 h-full w-1 ${bar}`} />
@@ -312,7 +353,12 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
                     <h3 className="font-semibold text-gray-900">{label}</h3>
                     {items.length ? (
                       <ul className="space-y-1 text-sm text-gray-700">
-                        {items.map((t, i) => <li key={i}>• {t}</li>)}
+                        {items.map((item) => (
+                          <li key={item.id}>
+                            • <span className="font-semibold">{item.title}</span>
+                            {item.description ? ` - ${item.description}` : ""}
+                          </li>
+                        ))}
                       </ul>
                     ) : (
                       <p className="text-sm text-gray-400">항목 없음</p>
@@ -368,13 +414,19 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
                   style={{ left: `${node.x}%`, top: `${node.y}%` }}
                 >
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{node.label}</p>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData[node.key] || "-"}</p>
+                  {sevenSData[node.key].title ? (
+                    <p className="text-xs font-semibold text-gray-800">{sevenSData[node.key].title}</p>
+                  ) : null}
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData[node.key].description || "-"}</p>
                 </article>
               ))}
 
               <article className="absolute left-1/2 top-1/2 z-30 flex h-72 w-72 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-2 border-blue-200 bg-blue-50 p-8 text-center shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Shared Values</p>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData.sharedValues || "-"}</p>
+                {sevenSData.sharedValues.title ? (
+                  <p className="mt-2 text-xs font-semibold text-blue-800">{sevenSData.sharedValues.title}</p>
+                ) : null}
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData.sharedValues.description || "-"}</p>
               </article>
             </div>
           </div>
@@ -382,13 +434,19 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
           <div className="space-y-4 md:hidden">
             <article className="rounded-3xl border-2 border-blue-200 bg-blue-50 p-5 shadow-sm">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">Shared Values</p>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData.sharedValues || "-"}</p>
+              {sevenSData.sharedValues.title ? (
+                <p className="text-xs font-semibold text-blue-800">{sevenSData.sharedValues.title}</p>
+              ) : null}
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData.sharedValues.description || "-"}</p>
             </article>
             <div className="grid grid-cols-2 gap-3">
               {sevenSNodes.map((node) => (
                 <article key={`mobile-${node.key}`} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{node.label}</p>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData[node.key] || "-"}</p>
+                  {sevenSData[node.key].title ? (
+                    <p className="text-xs font-semibold text-gray-800">{sevenSData[node.key].title}</p>
+                  ) : null}
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData[node.key].description || "-"}</p>
                 </article>
               ))}
             </div>

@@ -3,35 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  createFrameworkMeetingNoteAction,
-  deleteFrameworkMeetingNoteAction,
-} from "@/features/frameworks/actions/framework-meeting-note-actions";
-import { frameworkKeys, type FrameworkKey } from "@/features/frameworks/types/framework";
-import type { FrameworkMeetingNote } from "@/features/frameworks/types/framework-meeting-note";
+  createProjectMeetingNoteAction,
+  deleteProjectMeetingNoteAction,
+} from "@/features/projects/actions/project-meeting-note-actions";
+import type { ProjectMeetingNote } from "@/features/projects/types/project-meeting-note";
 import type { Profile } from "@/features/profiles/types/profile";
 import { FormPendingOverlay } from "@/components/ui/form-pending-overlay";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { pushToast } from "@/lib/utils/toast";
 import { CURRENT_USER_KEY } from "@/lib/config/profile-storage";
 
-const frameworkLabelMap: Record<FrameworkKey, string> = {
-  SWOT: "SWOT",
-  PESTEL: "PESTEL",
-  MCKINSEY_7S: "McKinsey 7S",
-  MATRIX_2X2: "Double Matrix",
-  PERSONA_MODEL: "Persona Model",
-  COMPETITOR_MAPPING: "Competitor Mapping",
-};
-
 type MeetingNotesPageClientProps = {
   projectId: string;
-  notes: FrameworkMeetingNote[];
+  notes: ProjectMeetingNote[];
   profiles: Profile[];
 };
 
 export function MeetingNotesPageClient({ projectId, notes, profiles }: MeetingNotesPageClientProps) {
   const router = useRouter();
-  const [frameworkKey, setFrameworkKey] = useState<FrameworkKey>("SWOT");
   const [currentUserName, setCurrentUserName] = useState("");
 
   const profileById = useMemo(() => {
@@ -50,7 +39,7 @@ export function MeetingNotesPageClient({ projectId, notes, profiles }: MeetingNo
   async function handleCreate(formData: FormData) {
     pushToast("저장 중...");
     try {
-      await createFrameworkMeetingNoteAction(formData);
+      await createProjectMeetingNoteAction(formData);
       pushToast("회의록이 저장되었습니다.");
       router.refresh();
     } catch (error) {
@@ -62,7 +51,7 @@ export function MeetingNotesPageClient({ projectId, notes, profiles }: MeetingNo
   async function handleDelete(formData: FormData) {
     pushToast("삭제 중...");
     try {
-      await deleteFrameworkMeetingNoteAction(formData);
+      await deleteProjectMeetingNoteAction(formData);
       pushToast("회의록이 삭제되었습니다.");
       router.refresh();
     } catch (error) {
@@ -74,41 +63,24 @@ export function MeetingNotesPageClient({ projectId, notes, profiles }: MeetingNo
   return (
     <section className="space-y-6">
       <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-900">프레임워크 회의록 추가</h2>
-        <p className="mt-2 text-sm text-gray-600">프레임워크별 논의 사항과 결론을 저장해 팀 기록으로 남기세요.</p>
+        <h2 className="text-xl font-semibold text-gray-900">프로젝트 회의록 추가</h2>
+        <p className="mt-2 text-sm text-gray-600">프로젝트 단위 논의 사항과 결론을 저장해 팀 기록으로 남기세요.</p>
 
         <form action={handleCreate} className="mt-5 space-y-3">
           <FormPendingOverlay message="회의록 저장 중..." />
           <input type="hidden" name="projectId" value={projectId} />
           <input type="hidden" name="createdBy" value={currentUserName} />
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="grid gap-1.5">
-              <span className="text-xs font-medium text-gray-500">프레임워크</span>
-              <select
-                name="frameworkKey"
-                value={frameworkKey}
-                onChange={(event) => setFrameworkKey(event.target.value as FrameworkKey)}
-                className="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-800 outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
-              >
-                {frameworkKeys.map((key) => (
-                  <option key={key} value={key}>
-                    {frameworkLabelMap[key]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1.5">
-              <span className="text-xs font-medium text-gray-500">회의 일자</span>
-              <input
-                type="date"
-                name="meetingDate"
-                defaultValue={new Date().toISOString().slice(0, 10)}
-                className="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-800 outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
-                required
-              />
-            </label>
-          </div>
+          <label className="grid gap-1.5">
+            <span className="text-xs font-medium text-gray-500">회의 일자</span>
+            <input
+              type="date"
+              name="meetingDate"
+              defaultValue={new Date().toISOString().slice(0, 10)}
+              className="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-800 outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
+              required
+            />
+          </label>
 
           <label className="grid gap-1.5">
             <span className="text-xs font-medium text-gray-500">회의 제목</span>
@@ -156,9 +128,6 @@ export function MeetingNotesPageClient({ projectId, notes, profiles }: MeetingNo
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                          {frameworkLabelMap[note.frameworkKey]}
-                        </span>
                         <span className="text-xs text-gray-500">{note.meetingDate}</span>
                       </div>
                       <h3 className="text-base font-semibold text-gray-900">{note.title}</h3>

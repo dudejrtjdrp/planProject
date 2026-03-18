@@ -1,5 +1,9 @@
-import { RouteLoadingSkeleton } from "@/components/ui/route-loading-skeleton";
-
-export default function PersonaModelLoading() {
-  return <RouteLoadingSkeleton message="Persona Model 데이터를 불러오는 중..." />;
+export default function Loading() {
+	return (
+		<div className="space-y-6">
+			<div className="h-24 animate-pulse rounded-2xl bg-white shadow-sm" />
+			<div className="h-[420px] animate-pulse rounded-3xl bg-white shadow-sm" />
+		</div>
+	);
 }
+

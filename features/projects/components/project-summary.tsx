@@ -71,7 +71,7 @@ export function ProjectSummary({ project, projectVersion }: ProjectSummaryProps)
           <FrameworkLinkButton href={mckinsey7sHref} label="McKinsey 7S" />
           <FrameworkLinkButton href={doubleMatrixHref} label="Double Matrix" />
           <FrameworkLinkButton href={personaModelHref} label="Persona Model" />
-          <FrameworkLinkButton href={meetingNotesHref} label="프레임워크 회의록" />
+          <FrameworkLinkButton href={meetingNotesHref} label="프로젝트 회의록" />
           <FrameworkLinkButton href={reportHref} label="분석 리포트" />
         </div>
       </div>

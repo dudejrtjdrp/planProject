@@ -2,40 +2,51 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { PageLoadingBar } from "@/components/ui/page-loading-bar";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CURRENT_USER_KEY } from "@/lib/config/profile-storage";
 
 type ProfileGateProps = {
-  children: ReactNode;
+	children: ReactNode;
 };
 
 export function ProfileGate({ children }: ProfileGateProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const [isReady, setIsReady] = useState(false);
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+	const [isChecking, setIsChecking] = useState(true);
+	const [hasProfile, setHasProfile] = useState(false);
 
-  useEffect(() => {
-    const currentUser = window.localStorage.getItem(CURRENT_USER_KEY);
+	useEffect(() => {
+		const currentUser = window.localStorage.getItem(CURRENT_USER_KEY);
 
-    if (!currentUser) {
-      router.replace(`/profile?next=${encodeURIComponent(pathname)}`);
-      return;
-    }
+		if (currentUser) {
+			setHasProfile(true);
+			setIsChecking(false);
+			return;
+		}
 
-    setIsReady(true);
-  }, [pathname, router]);
+		const query = searchParams.toString();
+		const nextPath = `${pathname}${query ? `?${query}` : ""}`;
+		router.replace(`/profile?next=${encodeURIComponent(nextPath)}`);
+		setHasProfile(false);
+		setIsChecking(false);
+	}, [pathname, router, searchParams]);
 
-  if (!isReady) {
-    return (
-      <div className="mx-auto w-full max-w-5xl p-8">
-        <PageLoadingBar />
-        <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-medium text-gray-700">프로필을 확인하는 중...</p>
-        </div>
-      </div>
-    );
-  }
+	if (isChecking) {
+		return (
+			<div className="min-h-screen bg-[#F9FAFB]">
+				<div className="mx-auto max-w-5xl p-8">
+					<div className="h-8 w-52 animate-pulse rounded bg-gray-200" />
+					<div className="mt-6 h-28 animate-pulse rounded-2xl bg-white shadow-sm" />
+				</div>
+			</div>
+		);
+	}
 
-  return <>{children}</>;
+	if (!hasProfile) {
+		return null;
+	}
+
+	return <>{children}</>;
 }
+

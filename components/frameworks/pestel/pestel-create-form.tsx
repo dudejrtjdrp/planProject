@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PestelFactor } from "@/features/pestel/types/pestel-item";
+import { stringifyPestelContent } from "@/features/pestel/types/pestel-item";
 import { createPestelItemAction } from "@/features/pestel/actions/pestel-actions";
 import { FormPendingOverlay } from "@/components/ui/form-pending-overlay";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
@@ -19,6 +20,8 @@ type PestelCreateFormProps = {
 export function PestelCreateForm({ projectId, projectFrameworkId, factor, placeholder }: PestelCreateFormProps) {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<string>("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
     const profileName = window.localStorage.getItem(CURRENT_USER_KEY) ?? "";
@@ -26,9 +29,19 @@ export function PestelCreateForm({ projectId, projectFrameworkId, factor, placeh
   }, []);
 
   async function handleCreate(formData: FormData) {
+    const mergedContent = stringifyPestelContent(title, description);
+    formData.set("content", mergedContent);
+
+    if (!title.trim()) {
+      pushToast("제목을 입력해 주세요.", "error");
+      return;
+    }
+
     pushToast("저장 중...");
     try {
       await createPestelItemAction(formData);
+      setTitle("");
+      setDescription("");
       pushToast("PESTEL 항목이 추가되었습니다.");
       router.refresh();
     } catch (error) {
@@ -44,11 +57,18 @@ export function PestelCreateForm({ projectId, projectFrameworkId, factor, placeh
       <input type="hidden" name="projectFrameworkId" value={projectFrameworkId ?? ""} />
       <input type="hidden" name="factor" value={factor} />
       <input type="hidden" name="createdBy" value={currentUser} />
-      <textarea
-        name="content"
+      <input
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
         required
+        placeholder="제목"
+        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
+      />
+      <textarea
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
         rows={3}
-        placeholder={placeholder}
+        placeholder={`${placeholder} 상세 설명`}
         className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
       />
       <div className="space-y-1">

@@ -22,6 +22,8 @@ export type PestelItem = {
   projectFrameworkId: string;
   createdBy: string | null;
   factor: PestelFactor;
+  title: string;
+  description: string;
   content: string;
   attachmentUrl: string | null;
   attachmentName: string | null;
@@ -55,4 +57,41 @@ export function toPestelDbFactor(factor: PestelFactor): PestelDbFactor {
 
 export function fromPestelDbFactor(factor: PestelDbFactor): PestelFactor {
   return pestelDbToFactorMap[factor];
+}
+
+export function parsePestelContent(content: string): { title: string; description: string } {
+  const normalized = content.trim();
+  if (!normalized) {
+    return { title: "", description: "" };
+  }
+
+  try {
+    const parsed = JSON.parse(normalized) as { title?: unknown; description?: unknown };
+    if (parsed && typeof parsed === "object") {
+      const title = typeof parsed.title === "string" ? parsed.title.trim() : "";
+      const description = typeof parsed.description === "string" ? parsed.description.trim() : "";
+      if (title || description) {
+        return { title, description };
+      }
+    }
+  } catch {
+  }
+
+  const lines = normalized
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length <= 1) {
+    return { title: "", description: lines[0] ?? "" };
+  }
+
+  return {
+    title: lines[0],
+    description: lines.slice(1).join("\n"),
+  };
+}
+
+export function stringifyPestelContent(title: string, description: string): string {
+  return JSON.stringify({ title: title.trim(), description: description.trim() });
 }

@@ -1,38 +1,19 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RouteReadySignal } from "@/components/ui/route-ready-signal";
 import { CURRENT_USER_KEY } from "@/lib/config/profile-storage";
 import { FIXED_PROFILE_COLORS, GUEST_PROFILE_NAME } from "@/features/profiles/types/profile";
 
 const profiles = Object.entries(FIXED_PROFILE_COLORS).map(([name, color]) => ({ name, color }));
 
 export default function ProfilePage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-[#F9FAFB] px-8 py-16">
-          <section className="mx-auto w-full max-w-5xl rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-            <p className="text-sm text-gray-700">프로필 페이지를 불러오는 중...</p>
-          </section>
-        </main>
-      }
-    >
-      <ProfilePageContent />
-    </Suspense>
-  );
-}
-
-function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const currentUser = window.localStorage.getItem(CURRENT_USER_KEY);
-    const isSwitchMode = searchParams.get("switch") === "1";
-
-    if (currentUser && !isSwitchMode) {
+    if (currentUser) {
       const next = searchParams.get("next");
       router.replace(next && next.startsWith("/") ? next : "/");
     }
@@ -49,7 +30,6 @@ function ProfilePageContent() {
 
   return (
     <main className="min-h-screen bg-[#F9FAFB] px-8 py-16">
-      <RouteReadySignal />
       <section className="mx-auto w-full max-w-5xl space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">프로필 선택</h1>

@@ -8,6 +8,7 @@ import { deletePestelItemAction, updatePestelItemContentAction } from "@/feature
 import { FormPendingOverlay } from "@/components/ui/form-pending-overlay";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { pushToast } from "@/lib/utils/toast";
+import { stringifyPestelContent } from "@/features/pestel/types/pestel-item";
 import type { PestelItem } from "@/features/pestel/types/pestel-item";
 
 type PestelItemCardProps = {
@@ -19,7 +20,8 @@ type PestelItemCardProps = {
 export function PestelItemCard({ item, projectId, profileById }: PestelItemCardProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(item.content);
+  const [titleDraft, setTitleDraft] = useState(item.title);
+  const [descriptionDraft, setDescriptionDraft] = useState(item.description);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -32,6 +34,7 @@ export function PestelItemCard({ item, projectId, profileById }: PestelItemCardP
 
   const author = item.createdBy ? profileById.get(item.createdBy) : null;
   const isImageAttachment = Boolean(item.attachmentUrl && item.attachmentMimeType?.startsWith("image/"));
+  const parsedContent = { title: item.title, description: item.description };
 
   async function handleDelete(formData: FormData) {
     try {
@@ -46,6 +49,8 @@ export function PestelItemCard({ item, projectId, profileById }: PestelItemCardP
 
   async function handleUpdate(formData: FormData) {
     try {
+      const mergedContent = stringifyPestelContent(titleDraft, descriptionDraft);
+      formData.set("content", mergedContent);
       await updatePestelItemContentAction(formData);
       setIsEditing(false);
       pushToast("PESTEL 항목이 수정되었습니다.");
@@ -70,12 +75,18 @@ export function PestelItemCard({ item, projectId, profileById }: PestelItemCardP
             <FormPendingOverlay message="PESTEL 항목 수정 중..." />
             <input type="hidden" name="itemId" value={item.id} />
             <input type="hidden" name="projectId" value={projectId} />
-            <textarea
-              name="content"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              rows={3}
+            <input
+              value={titleDraft}
+              onChange={(event) => setTitleDraft(event.target.value)}
               required
+              placeholder="제목"
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-all duration-200 focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
+            />
+            <textarea
+              value={descriptionDraft}
+              onChange={(event) => setDescriptionDraft(event.target.value)}
+              rows={3}
+              placeholder="상세 설명"
               className="w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-all duration-200 focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
             />
             <div className="flex items-center gap-2">
@@ -87,7 +98,8 @@ export function PestelItemCard({ item, projectId, profileById }: PestelItemCardP
               <button
                 type="button"
                 onClick={() => {
-                  setDraft(item.content);
+                    setTitleDraft(item.title);
+                    setDescriptionDraft(item.description);
                   setIsEditing(false);
                 }}
                 className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 transition-all duration-200 hover:bg-gray-50"
@@ -98,7 +110,12 @@ export function PestelItemCard({ item, projectId, profileById }: PestelItemCardP
           </form>
         ) : (
           <div className="space-y-2">
-            <p className="text-sm leading-relaxed text-gray-700">{item.content}</p>
+            {parsedContent.title ? (
+              <h4 className="text-sm font-semibold leading-relaxed text-gray-900">{parsedContent.title}</h4>
+            ) : null}
+            {parsedContent.description ? (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{parsedContent.description}</p>
+            ) : null}
             {item.attachmentUrl ? (
               <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
                 {isImageAttachment ? (

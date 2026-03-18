@@ -1,62 +1,57 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { SwotType } from "@/features/swot/types/swot-item";
+import { stringifySwotContent } from "@/features/swot/types/swot-item";
 import { createSwotItemAction } from "@/features/swot/actions/swot-actions";
-import { FormPendingOverlay } from "@/components/ui/form-pending-overlay";
-import { FormSubmitButton } from "@/components/ui/form-submit-button";
-import { pushToast } from "@/lib/utils/toast";
 import { CURRENT_USER_KEY } from "@/lib/config/profile-storage";
 
 type SwotCreateFormProps = {
   projectId: string;
-  projectFrameworkId: string | null;
   type: SwotType;
   placeholder: string;
 };
 
-export function SwotCreateForm({ projectId, projectFrameworkId, type, placeholder }: SwotCreateFormProps) {
-  const router = useRouter();
+export function SwotCreateForm({ projectId, type, placeholder }: SwotCreateFormProps) {
   const [currentUser, setCurrentUser] = useState<string>("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+
+  const structuredContent = stringifySwotContent(title, description);
 
   useEffect(() => {
     const profileName = window.localStorage.getItem(CURRENT_USER_KEY) ?? "";
     setCurrentUser(profileName);
   }, []);
 
-  async function handleCreate(formData: FormData) {
-    try {
-      await createSwotItemAction(formData);
-      pushToast("SWOT 항목이 추가되었습니다.");
-      router.refresh();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "SWOT 항목 추가에 실패했습니다.";
-      pushToast(message, "error");
-    }
-  }
-
   return (
-    <form action={handleCreate} className="space-y-3">
-      <FormPendingOverlay message="SWOT 항목 저장 중..." />
+    <form action={createSwotItemAction} className="space-y-3">
       <input type="hidden" name="projectId" value={projectId} />
-      <input type="hidden" name="projectFrameworkId" value={projectFrameworkId ?? ""} />
       <input type="hidden" name="type" value={type} />
       <input type="hidden" name="createdBy" value={currentUser} />
-      <textarea
-        name="content"
+      <input type="hidden" name="content" value={structuredContent} />
+      <input
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
         required
+        placeholder="제목"
+        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
+      />
+      <textarea
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
         rows={3}
-        placeholder={placeholder}
+        placeholder={`${placeholder} 상세 설명`}
         className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
       />
       <div className="flex justify-end">
-        <FormSubmitButton
-          idleText="추가"
-          pendingText="저장 중..."
+        <button
+          type="submit"
           disabled={!currentUser}
           className="rounded-xl bg-[#3182F6] px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-blue-600 active:scale-95 disabled:cursor-not-allowed disabled:bg-blue-200"
-        />
+        >
+          추가
+        </button>
       </div>
     </form>
   );

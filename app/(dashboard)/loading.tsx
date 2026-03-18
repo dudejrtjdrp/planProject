@@ -1,9 +1,10 @@
-import { RouteLoadingSkeleton } from "@/components/ui/route-loading-skeleton";
-
-export default function DashboardLoading() {
-  return (
-    <div className="mx-auto w-full max-w-5xl p-8">
-      <RouteLoadingSkeleton message="데이터를 최신 상태로 불러오는 중..." />
-    </div>
-  );
+export default function Loading() {
+	return (
+		<div className="space-y-4">
+			<div className="h-7 w-52 animate-pulse rounded bg-gray-200" />
+			<div className="h-24 animate-pulse rounded-2xl bg-white shadow-sm" />
+			<div className="h-24 animate-pulse rounded-2xl bg-white shadow-sm" />
+		</div>
+	);
 }
+

@@ -11,6 +11,7 @@ import { usePestelRealtime } from "./pestel-realtime-hook";
 import { pushToast } from "@/lib/utils/toast";
 import { CURRENT_USER_KEY } from "@/lib/config/profile-storage";
 import type { PestelItem, PestelFactor } from "@/features/pestel/types/pestel-item";
+import { parsePestelContent } from "@/features/pestel/types/pestel-item";
 import type { Profile } from "@/features/profiles/types/profile";
 
 type PestelAnalysisReportProps = {
@@ -126,11 +127,14 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
   usePestelRealtime({
     projectFrameworkId,
     onInsert: (row) => {
+      const parsed = parsePestelContent(row.content);
       setBoardItems((prev) => [
         ...prev,
         {
           id: row.id,
           factor: row.factor,
+          title: parsed.title,
+          description: parsed.description,
           content: row.content,
           attachmentUrl: row.attachment_url,
           attachmentName: row.attachment_name,
@@ -144,11 +148,14 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
       ]);
     },
     onUpdate: (row) => {
+      const parsed = parsePestelContent(row.content);
       setBoardItems((prev) =>
         prev.map((item) =>
           item.id === row.id
             ? {
                 ...item,
+                title: parsed.title,
+                description: parsed.description,
                 content: row.content,
                 attachmentUrl: row.attachment_url,
                 attachmentName: row.attachment_name,
@@ -264,33 +271,33 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl print:max-w-full">
       {/* Header */}
-      <div className="mb-12 space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900">PESTEL Analysis</h1>
-        <p className="text-lg text-gray-500">
+      <div className="mb-12 space-y-2 print:mb-8 print:space-y-1">
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900 print:text-2xl">PESTEL Analysis</h1>
+        <p className="text-lg text-gray-500 print:text-sm">
           Comprehensive macro-environment analysis framework covering political, economic, social, technological, environmental, and legal factors
         </p>
-        {isPending ? <p className="text-sm text-gray-400">저장 중...</p> : null}
+        {isPending ? <p className="text-sm text-gray-400 print:hidden">저장 중...</p> : null}
       </div>
 
       {/* Vertical Analytical Sections */}
-      <div className="space-y-6">
+      <div className="space-y-6 print:space-y-4">
         {factors.map((factorConfig) => {
           const factorItems = groupedItems[factorConfig.factor];
 
           return (
             <div
               key={factorConfig.factor}
-              className={`relative rounded-3xl border ${factorConfig.borderColor} ${factorConfig.bgAccent} p-8 shadow-sm transition-all hover:shadow-md before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:rounded-l-3xl ${factorConfig.indicatorColor}`}
+              className={`relative rounded-3xl border ${factorConfig.borderColor} ${factorConfig.bgAccent} p-8 shadow-sm transition-all hover:shadow-md print:shadow-none print:p-6 print:hover:shadow-none print:break-inside-avoid before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:rounded-l-3xl ${factorConfig.indicatorColor} print:before:w-0.5`}
             >
               {/* Content grid: 250px title | 1fr analysis */}
-              <div className="grid gap-10" style={{ gridTemplateColumns: "250px 1fr" }}>
+              <div className="grid gap-10 print:gap-6" style={{ gridTemplateColumns: "250px 1fr" }}>
                 {/* Left: Category title & summary */}
-                <div className="flex flex-col justify-between">
+                <div className="flex flex-col justify-between print:justify-start">
                   <div className="space-y-2">
-                    <h2 className="text-2xl font-bold text-gray-900">{factorConfig.label}</h2>
-                    <p className="text-sm text-gray-600">{factorConfig.description}</p>
+                    <h2 className="text-2xl font-bold text-gray-900 print:text-lg">{factorConfig.label}</h2>
+                    <p className="text-sm text-gray-600 print:text-xs">{factorConfig.description}</p>
                   </div>
                   <div className="text-xs font-medium text-gray-500">
                     {factorItems.length} factor{factorItems.length !== 1 ? "s" : ""}
@@ -331,7 +338,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                           type="button"
                           onClick={() => handleCreate(factorConfig.factor)}
                           disabled={isPending}
-                          className="inline-flex items-center gap-1 rounded-md bg-[#3182F6] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                          className="inline-flex items-center gap-1 rounded-md bg-[#3182F6] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60 print:hidden"
                         >
                           <Check className="h-3.5 w-3.5" /> 저장
                         </button>
@@ -342,7 +349,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                             setCreateDraft("");
                             setCreateAttachment(null);
                           }}
-                          className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                          className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 print:hidden"
                         >
                           <X className="h-3.5 w-3.5" /> 취소
                         </button>
@@ -361,21 +368,21 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                         const isEditing = editingItemId === item.id;
 
                         return (
-                          <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-4 space-y-2">
+                          <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-4 space-y-2 print:border-gray-300 print:bg-white print:p-3 print:break-inside-avoid">
                             {isEditing ? (
                               <>
                                 <textarea
                                   value={editingDraft}
                                   onChange={(event) => setEditingDraft(event.target.value)}
                                   rows={3}
-                                  className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
+                                  className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-100 print:hidden"
                                 />
-                                <div className="flex items-center justify-end gap-2">
+                                <div className="flex items-center justify-end gap-2 print:hidden">
                                   <button
                                     type="button"
                                     onClick={() => handleUpdate(item.id)}
                                     disabled={isPending}
-                                    className="inline-flex items-center gap-1 rounded-md bg-[#3182F6] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                                    className="inline-flex items-center gap-1 rounded-md bg-[#3182F6] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60 print:hidden"
                                   >
                                     <Check className="h-3.5 w-3.5" /> 저장
                                   </button>
@@ -394,7 +401,9 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                             ) : (
                               <div className="flex items-start justify-between gap-3">
                                 <div className="space-y-2">
-                                  <p className="text-base font-medium text-gray-900">{item.content}</p>
+                                  <div className="text-sm text-gray-700 print:text-xs">
+                                  {item.content}
+                                </div>
                                   {item.attachmentUrl ? (
                                     <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
                                       {item.attachmentMimeType?.startsWith("image/") ? (
@@ -416,11 +425,11 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                                     </div>
                                   ) : null}
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 print:hidden">
                                   <button
                                     type="button"
                                     onClick={() => startEdit(item)}
-                                    className="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
+                                    className="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 print:hidden"
                                     aria-label="PESTEL 항목 수정"
                                   >
                                     <Pencil className="h-3.5 w-3.5" />
@@ -429,7 +438,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                                     type="button"
                                     onClick={() => handleDelete(item.id)}
                                     disabled={isPending}
-                                    className="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-60"
+                                    className="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-60 print:hidden"
                                     aria-label="PESTEL 항목 삭제"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -439,7 +448,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                             )}
 
                             {profile && (
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-gray-500 print:text-xs">
                                 by <span className="font-medium text-gray-700">{profile.name}</span>
                               </div>
                             )}
@@ -456,7 +465,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
                         setCreateDraft("");
                         setCreateAttachment(null);
                       }}
-                      className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 w-full justify-center"
+                      className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 w-full justify-center print:hidden"
                     >
                       <Plus className="h-3.5 w-3.5" /> 추가
                     </button>
@@ -469,7 +478,7 @@ export function PestelAnalysisReport({ projectId, projectFrameworkId, items, pro
       </div>
 
       {/* Summary Footer */}
-      <div className="mt-12 rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
+      <div className="mt-12 rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm print:mt-8 print:p-6 print:shadow-none">
         <div className="grid gap-8 md:grid-cols-3">
           <div className="space-y-2">
             <h3 className="font-semibold text-gray-900">Total Factors</h3>

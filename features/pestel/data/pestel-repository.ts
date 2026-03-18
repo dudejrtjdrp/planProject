@@ -1,13 +1,15 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { attachFrameworkToProject, getFrameworkByKey } from "@/features/frameworks/data/framework-repository";
 import type { PestelDbFactor, PestelItem } from "@/features/pestel/types/pestel-item";
-import { fromPestelDbFactor, toPestelDbFactor, type PestelFactor } from "@/features/pestel/types/pestel-item";
+import { fromPestelDbFactor, parsePestelContent, toPestelDbFactor, type PestelFactor } from "@/features/pestel/types/pestel-item";
 
 type PestelItemRow = {
   id: string;
   project_framework_id: string;
   created_by: string | null;
   factor: PestelDbFactor;
+  title: string | null;
+  description: string | null;
   content: string;
   attachment_url: string | null;
   attachment_name: string | null;
@@ -18,11 +20,14 @@ type PestelItemRow = {
 };
 
 function mapPestelItemRow(row: PestelItemRow): PestelItem {
+  const parsed = parsePestelContent(row.content);
   return {
     id: row.id,
     projectFrameworkId: row.project_framework_id,
     createdBy: row.created_by,
     factor: fromPestelDbFactor(row.factor),
+    title: row.title?.trim() || parsed.title,
+    description: row.description?.trim() || parsed.description,
     content: row.content,
     attachmentUrl: row.attachment_url,
     attachmentName: row.attachment_name,
@@ -53,7 +58,7 @@ export async function getPestelItems(projectId: string): Promise<PestelItem[]> {
   const { data, error } = await supabase
     .from("pestel_items")
     .select(
-      "id, project_framework_id, created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
+      "id, project_framework_id, created_by, factor, title, description, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
     )
     .eq("project_framework_id", framework.id)
     .order("factor", { ascending: true })
@@ -72,7 +77,7 @@ export async function getPestelItemsByFrameworkId(projectFrameworkId: string): P
   const { data, error } = await supabase
     .from("pestel_items")
     .select(
-      "id, project_framework_id, created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
+      "id, project_framework_id, created_by, factor, title, description, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
     )
     .eq("project_framework_id", projectFrameworkId)
     .order("factor", { ascending: true })
@@ -116,6 +121,7 @@ export async function createPestelItem(
   }
 
   const nextPosition = (positionData?.position ?? -1) + 1;
+  const parsed = parsePestelContent(content);
 
   const { data, error } = await supabase
     .from("pestel_items")
@@ -123,6 +129,8 @@ export async function createPestelItem(
       project_framework_id: framework.id,
       created_by: createdBy,
       factor: dbFactor,
+      title: parsed.title,
+      description: parsed.description,
       content,
       attachment_url: attachment?.url ?? null,
       attachment_name: attachment?.name ?? null,
@@ -130,7 +138,7 @@ export async function createPestelItem(
       position: nextPosition,
     })
     .select(
-      "id, project_framework_id, created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
+      "id, project_framework_id, created_by, factor, title, description, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
     )
     .single();
 
@@ -152,13 +160,14 @@ export async function deletePestelItem(itemId: string): Promise<void> {
 
 export async function updatePestelItemContent(itemId: string, content: string): Promise<PestelItem> {
   const supabase = createSupabaseServerClient();
+  const parsed = parsePestelContent(content);
 
   const { data, error } = await supabase
     .from("pestel_items")
-    .update({ content })
+    .update({ content, title: parsed.title, description: parsed.description })
     .eq("id", itemId)
     .select(
-      "id, project_framework_id, created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
+      "id, project_framework_id, created_by, factor, title, description, content, attachment_url, attachment_name, attachment_mime_type, position, created_at, updated_at",
     )
     .single();
 
@@ -197,7 +206,7 @@ export async function clonePestelItemsToFramework(
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("pestel_items")
-    .select("created_by, factor, content, attachment_url, attachment_name, attachment_mime_type, position")
+    .select("created_by, factor, title, description, content, attachment_url, attachment_name, attachment_mime_type, position")
     .eq("project_framework_id", sourceFrameworkId)
     .order("factor", { ascending: true })
     .order("position", { ascending: true })
@@ -216,6 +225,8 @@ export async function clonePestelItemsToFramework(
     project_framework_id: targetFrameworkId,
     created_by: item.created_by,
     factor: item.factor,
+    title: item.title,
+    description: item.description,
     content: item.content,
     attachment_url: item.attachment_url,
     attachment_name: item.attachment_name,

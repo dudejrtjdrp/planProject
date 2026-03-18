@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PostInput } from "@/components/posts/post-input";
 import { PostList, type Post } from "@/components/posts/post-list";
-import { PageLoadingBar } from "@/components/ui/page-loading-bar";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 
 function addPostUnique(previous: Post[], incoming: Post): Post[] {
@@ -16,14 +15,6 @@ function addPostUnique(previous: Post[], incoming: Post): Post[] {
   return [incoming, ...previous];
 }
 
-function updatePostById(previous: Post[], incoming: Post): Post[] {
-  return previous.map((post) => (post.id === incoming.id ? incoming : post));
-}
-
-function removePostById(previous: Post[], postId: string): Post[] {
-  return previous.filter((post) => post.id !== postId);
-}
-
 export default function HomePage() {
   const router = useRouter();
 
@@ -31,7 +22,6 @@ export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [clientError, setClientError] = useState<string | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     const selectedProfile = window.localStorage.getItem("currentUser");
@@ -67,18 +57,16 @@ export default function HomePage() {
 
       if (error) {
         console.error("Failed to load posts", error);
-        setClientError("팀 메모를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
         setIsLoading(false);
         return;
       }
 
-      setClientError(null);
       setPosts((data ?? []) as Post[]);
       setIsLoading(false);
     }
 
     void loadPosts();
-  }, [currentUser, retryKey]);
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -101,24 +89,6 @@ export default function HomePage() {
           setPosts((prev) => addPostUnique(prev, payload.new as Post));
         },
       )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "posts" },
-        (payload) => {
-          setPosts((prev) => updatePostById(prev, payload.new as Post));
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "posts" },
-        (payload) => {
-          const deleted = payload.old as { id?: string };
-          if (!deleted.id) {
-            return;
-          }
-          setPosts((prev) => removePostById(prev, deleted.id as string));
-        },
-      )
       .subscribe();
 
     return () => {
@@ -130,7 +100,7 @@ export default function HomePage() {
     const author = window.localStorage.getItem("currentUser");
     if (!author) {
       router.replace("/profile");
-      throw new Error("프로필을 먼저 선택해 주세요.");
+      return;
     }
 
     let supabase: ReturnType<typeof getSupabaseClient>;
@@ -139,7 +109,7 @@ export default function HomePage() {
       setClientError(null);
     } catch (error) {
       setClientError(error instanceof Error ? error.message : "Failed to initialize Supabase client");
-      throw error instanceof Error ? error : new Error("Failed to initialize Supabase client");
+      return;
     }
 
     const { data, error } = await supabase
@@ -150,7 +120,7 @@ export default function HomePage() {
 
     if (error) {
       console.error("Failed to create post", error);
-      throw new Error(error.message);
+      return;
     }
 
     if (data) {
@@ -158,69 +128,8 @@ export default function HomePage() {
     }
   }
 
-  async function handleUpdatePost(postId: string, content: string) {
-    let supabase: ReturnType<typeof getSupabaseClient>;
-    try {
-      supabase = getSupabaseClient();
-      setClientError(null);
-    } catch (error) {
-      setClientError(error instanceof Error ? error.message : "Failed to initialize Supabase client");
-      throw error instanceof Error ? error : new Error("Failed to initialize Supabase client");
-    }
-
-    const { data, error } = await supabase
-      .from("posts")
-      .update({ content })
-      .eq("id", postId)
-      .eq("author", currentUser)
-      .select("id, content, author, created_at")
-      .single();
-
-    if (error) {
-      console.error("Failed to update post", error);
-      throw new Error(error.message);
-    }
-
-    if (data) {
-      setPosts((prev) => updatePostById(prev, data as Post));
-    }
-  }
-
-  async function handleDeletePost(postId: string) {
-    let supabase: ReturnType<typeof getSupabaseClient>;
-    try {
-      supabase = getSupabaseClient();
-      setClientError(null);
-    } catch (error) {
-      setClientError(error instanceof Error ? error.message : "Failed to initialize Supabase client");
-      throw error instanceof Error ? error : new Error("Failed to initialize Supabase client");
-    }
-
-    const { error } = await supabase
-      .from("posts")
-      .delete()
-      .eq("id", postId)
-      .eq("author", currentUser);
-
-    if (error) {
-      console.error("Failed to delete post", error);
-      throw new Error(error.message);
-    }
-
-    setPosts((prev) => removePostById(prev, postId));
-  }
-
   if (!currentUser) {
-    return (
-      <main className="w-full">
-        <section className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-          <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-            <PageLoadingBar />
-            <p className="mt-3 text-base text-gray-700">프로필 정보를 불러오는 중...</p>
-          </div>
-        </section>
-      </main>
-    );
+    return null;
   }
 
   return (
@@ -241,7 +150,7 @@ export default function HomePage() {
                 Projects
               </Link>
               <Link
-                href="/profile?switch=1"
+                href="/profile"
                 className="rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-blue-600 active:scale-95"
               >
                 Switch Profile
@@ -254,17 +163,7 @@ export default function HomePage() {
 
         {clientError ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-base text-rose-700 shadow-sm">
-            <p>{clientError}</p>
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={() => setRetryKey((prev) => prev + 1)}
-                disabled={isLoading}
-                className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                다시 시도
-              </button>
-            </div>
+            {clientError}
           </div>
         ) : null}
 
@@ -273,12 +172,7 @@ export default function HomePage() {
             Loading posts...
           </div>
         ) : (
-          <PostList
-            posts={posts}
-            currentUser={currentUser}
-            onUpdate={handleUpdatePost}
-            onDelete={handleDeletePost}
-          />
+          <PostList posts={posts} />
         )}
       </section>
     </main>

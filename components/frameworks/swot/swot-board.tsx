@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { SwotQuadrant } from "./swot-quadrant";
 import { useSwotRealtime } from "./swot-realtime-hook";
 import type { Profile } from "@/features/profiles/types/profile";
-import { updateSwotItemsOrderAction } from "@/features/swot/actions/swot-actions";
-import { fromSwotDbQuadrant, type SwotItem, type SwotType } from "@/features/swot/types/swot-item";
+import { updateSwotItemType } from "@/features/swot/actions/swot-actions";
+import { fromSwotDbQuadrant, parseSwotContent, type SwotItem, type SwotType } from "@/features/swot/types/swot-item";
 
 type SwotBoardProps = {
   projectId: string;
@@ -65,20 +65,10 @@ function toFlatItems(grouped: Record<SwotType, SwotItem[]>): SwotItem[] {
   return [...grouped.STRENGTH, ...grouped.WEAKNESS, ...grouped.OPPORTUNITY, ...grouped.THREAT];
 }
 
-function toSwotOrderPayload(grouped: Record<SwotType, SwotItem[]>) {
-  return (Object.entries(grouped) as Array<[SwotType, SwotItem[]]>).flatMap(([type, list]) =>
-    list.map((item, index) => ({ id: item.id, type, position: index })),
-  );
-}
-
 export function SwotBoard({ projectId, projectFrameworkId, items, profiles }: SwotBoardProps) {
   const [isPending, startTransition] = useTransition();
   const [boardItems, setBoardItems] = useState<SwotItem[]>(items);
   const pendingMutationIdsRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    setBoardItems(items);
-  }, [items]);
 
   const groupedItems = useMemo(() => toGroupedItems(boardItems), [boardItems]);
 
@@ -101,11 +91,14 @@ export function SwotBoard({ projectId, projectFrameworkId, items, profiles }: Sw
   useSwotRealtime({
     projectFrameworkId,
     onInsert: useCallback((row) => {
+      const parsed = parseSwotContent(row.content);
       const insertedItem: SwotItem = {
         id: row.id,
         projectFrameworkId: row.project_framework_id,
         createdBy: row.created_by,
         type: fromSwotDbQuadrant(row.quadrant),
+        title: parsed.title,
+        description: parsed.description,
         content: row.content,
         position: row.position,
         createdAt: row.created_at,
@@ -125,11 +118,14 @@ export function SwotBoard({ projectId, projectFrameworkId, items, profiles }: Sw
         return;
       }
 
+      const parsed = parseSwotContent(row.content);
       const updatedItem: SwotItem = {
         id: row.id,
         projectFrameworkId: row.project_framework_id,
         createdBy: row.created_by,
         type: fromSwotDbQuadrant(row.quadrant),
+        title: parsed.title,
+        description: parsed.description,
         content: row.content,
         position: row.position,
         createdAt: row.created_at,
@@ -188,8 +184,6 @@ export function SwotBoard({ projectId, projectFrameworkId, items, profiles }: Sw
 
     const draggedItem = sourceItems[sourceIndex];
 
-    const previousBoardItems = boardItems;
-
     if (sourceType === targetType) {
       const targetIndex = sourceItems.findIndex((item) => item.id === overId);
       if (targetIndex < 0) {
@@ -197,67 +191,55 @@ export function SwotBoard({ projectId, projectFrameworkId, items, profiles }: Sw
       }
 
       currentGrouped[sourceType] = arrayMove(sourceItems, sourceIndex, targetIndex);
+      setBoardItems(toFlatItems(currentGrouped));
+      return;
+    }
+
+    const nextSourceItems = sourceItems.filter((item) => item.id !== activeId);
+    const targetItems = [...currentGrouped[targetType]];
+    const targetIndex = targetItems.findIndex((item) => item.id === overId);
+
+    const movedItem: SwotItem = {
+      ...draggedItem,
+      type: targetType,
+    };
+
+    if (targetIndex >= 0) {
+      targetItems.splice(targetIndex, 0, movedItem);
     } else {
-      const nextSourceItems = sourceItems.filter((item) => item.id !== activeId);
-      const targetItems = [...currentGrouped[targetType]];
-      const targetIndex = targetItems.findIndex((item) => item.id === overId);
-
-      const movedItem: SwotItem = {
-        ...draggedItem,
-        type: targetType,
-      };
-
-      if (targetIndex >= 0) {
-        targetItems.splice(targetIndex, 0, movedItem);
-      } else {
-        targetItems.push(movedItem);
-      }
-
-      currentGrouped[sourceType] = nextSourceItems;
-      currentGrouped[targetType] = targetItems;
+      targetItems.push(movedItem);
     }
 
-    const nextBoardItems = toFlatItems(currentGrouped).map((item, index) => ({ ...item, position: index }));
-    setBoardItems(nextBoardItems);
+    currentGrouped[sourceType] = nextSourceItems;
+    currentGrouped[targetType] = targetItems;
 
-    const payload = toSwotOrderPayload(currentGrouped);
-    const affectedIds = payload.map((entry) => entry.id);
-    for (const id of affectedIds) {
-      pendingMutationIdsRef.current.add(id);
-    }
+    setBoardItems(toFlatItems(currentGrouped));
+    pendingMutationIdsRef.current.add(activeId);
 
     startTransition(async () => {
       try {
-        const formData = new FormData();
-        formData.set("projectId", projectId);
-        formData.set("updates", JSON.stringify(payload));
-        await updateSwotItemsOrderAction(formData);
+        await updateSwotItemType(activeId, targetType);
       } catch (error) {
         console.error("Failed to persist SWOT drag move", error);
-        setBoardItems(previousBoardItems);
-      } finally {
-        for (const id of affectedIds) {
-          pendingMutationIdsRef.current.delete(id);
-        }
+        pendingMutationIdsRef.current.delete(activeId);
       }
     });
   }
 
   return (
-    <section className="space-y-6">
-      <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-900">SWOT Board</h2>
-        <p className="mt-2 text-base text-gray-700">핵심 전략 인사이트를 4개 축으로 빠르게 정리하세요.</p>
-        {isPending ? <p className="mt-2 text-sm text-gray-400">저장 중...</p> : null}
+    <section className="space-y-6 print:space-y-4">
+      <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm print:shadow-none print:p-6">
+        <h2 className="text-xl font-semibold text-gray-900 print:text-lg">SWOT Board</h2>
+        <p className="mt-2 text-base text-gray-700 print:text-sm">\ud578\uc2ec \uc804\ub7b5 \uc778\uc0ac\uc774\ud2b8\ub97c 4\uac1c \ucd95\uc73c\ub85c \ube60\ub978\uac10\ub824 \uc815\ub9ac\ud558\uc138\uc694.</p>
+        {isPending ? <p className="mt-2 text-sm text-gray-400 print:hidden\">\uc800\uc7a5 \uc911...</p> : null}
       </div>
 
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-2 print:grid-cols-1 print:gap-4">
           {quadrants.map((quadrant) => (
             <SwotQuadrant
               key={quadrant.type}
               projectId={projectId}
-              projectFrameworkId={projectFrameworkId}
               type={quadrant.type}
               title={quadrant.title}
               description={quadrant.description}
