@@ -119,6 +119,7 @@ export default async function ProjectPersonaModelPage({ params, searchParams }: 
 			<PersonaModelCanvas
 				projectId={id}
 				frameworkId={framework?.id ?? null}
+				currentVersion={framework?.version ?? null}
 				initialData={parseData(framework?.title ?? null)}
 			/>
 		</div>

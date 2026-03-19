@@ -128,6 +128,53 @@ export default function HomePage() {
     }
   }
 
+  async function handleUpdatePost(postId: string, content: string) {
+    let supabase: ReturnType<typeof getSupabaseClient>;
+    try {
+      supabase = getSupabaseClient();
+      setClientError(null);
+    } catch (error) {
+      setClientError(error instanceof Error ? error.message : "Failed to initialize Supabase client");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("posts")
+      .update({ content })
+      .eq("id", postId)
+      .select("id, content, author, created_at")
+      .single();
+
+    if (error) {
+      console.error("Failed to update post", error);
+      return;
+    }
+
+    if (data) {
+      setPosts((prev) => prev.map((p) => (p.id === postId ? (data as Post) : p)));
+    }
+  }
+
+  async function handleDeletePost(postId: string) {
+    let supabase: ReturnType<typeof getSupabaseClient>;
+    try {
+      supabase = getSupabaseClient();
+      setClientError(null);
+    } catch (error) {
+      setClientError(error instanceof Error ? error.message : "Failed to initialize Supabase client");
+      return;
+    }
+
+    const { error } = await supabase.from("posts").delete().eq("id", postId).select("id").single();
+
+    if (error) {
+      console.error("Failed to delete post", error);
+      return;
+    }
+
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+  }
+
   if (!currentUser) {
     return null;
   }
@@ -172,7 +219,7 @@ export default function HomePage() {
             Loading posts...
           </div>
         ) : (
-          <PostList posts={posts} />
+          <PostList posts={posts} currentUser={currentUser!} onUpdate={handleUpdatePost} onDelete={handleDeletePost} />
         )}
       </section>
     </main>
