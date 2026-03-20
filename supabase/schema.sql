@@ -102,6 +102,12 @@ create table if not exists public.project_versions (
   description text,
   swot_version int,
   pestel_version int,
+  editor_name text,
+  commit_message text,
+  snapshot_json jsonb,
+  is_draft    boolean     not null default false,
+  restored_from_version int,
+  published_at timestamptz,
   created_at  timestamptz not null default now(),
 
   constraint project_versions_project_version_unique
@@ -110,6 +116,12 @@ create table if not exists public.project_versions (
 
 create index if not exists idx_project_versions_project_id
   on public.project_versions(project_id);
+
+create index if not exists idx_project_versions_project_created_at
+  on public.project_versions(project_id, created_at desc);
+
+create index if not exists idx_project_versions_snapshot_gin
+  on public.project_versions using gin (snapshot_json);
 
 -- ---------------------------------------------------------------------------
 -- 3. project_frameworks

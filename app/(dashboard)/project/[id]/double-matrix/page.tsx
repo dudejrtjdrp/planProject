@@ -3,7 +3,7 @@ import { DoubleMatrixBoard } from "@/components/frameworks/double-matrix/double-
 import { BackStepButton } from "@/components/ui/back-step-button";
 import { FrameworkVersionManager } from "@/components/ui/framework-version-manager";
 import { getFrameworkByKey, getFrameworkByVersion, getFrameworkVersionsByKey } from "@/features/frameworks/data/framework-repository";
-import { getProjectById } from "@/features/projects/data/project-repository";
+import { getProjectById, getProjectVersions } from "@/features/projects/data/project-repository";
 
 type PageProps = {
 	params: Promise<{ id: string }>;
@@ -46,7 +46,8 @@ export default async function ProjectDoubleMatrixPage({ params, searchParams }: 
 	const selectedVersion = Number.parseInt(resolvedSearchParams?.fv ?? "", 10);
 	const selectedProjectVersion = Number.parseInt(resolvedSearchParams?.pv ?? "", 10);
 
-	const project = await getProjectById(id);
+	const [project, projectVersions] = await Promise.all([getProjectById(id), getProjectVersions(id)]);
+	const hasProjectVersion = projectVersions.length > 0;
 	if (!project) {
 		redirect("/projects");
 	}
@@ -97,6 +98,7 @@ export default async function ProjectDoubleMatrixPage({ params, searchParams }: 
 				frameworkKey="MATRIX_2X2"
 				basePath={`/project/${id}/double-matrix`}
 				projectVersion={Number.isFinite(selectedProjectVersion) ? selectedProjectVersion : null}
+				hasProjectVersion={hasProjectVersion}
 				currentFrameworkId={framework?.id ?? null}
 				currentVersion={framework?.version ?? null}
 				versions={frameworkVersions}

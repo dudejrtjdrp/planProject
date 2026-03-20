@@ -12,6 +12,7 @@ type FrameworkVersionManagerProps = {
   frameworkKey: FrameworkKey;
   basePath: string;
   projectVersion: number | null;
+  hasProjectVersion: boolean;
   currentFrameworkId: string | null;
   currentVersion: number | null;
   versions: ProjectFramework[];
@@ -22,6 +23,7 @@ export function FrameworkVersionManager({
   frameworkKey,
   basePath,
   projectVersion,
+  hasProjectVersion,
   currentFrameworkId,
   currentVersion,
   versions,
@@ -56,6 +58,11 @@ export function FrameworkVersionManager({
   }
 
   function handleCreateVersion() {
+    if (!hasProjectVersion) {
+      pushToast("프로젝트 버전이 없어 새 분석 버전을 만들 수 없습니다.", "error");
+      return;
+    }
+
     startTransition(async () => {
       try {
         const result = await createFrameworkVersionAction(projectId, frameworkKey, currentFrameworkId);
@@ -99,12 +106,15 @@ export function FrameworkVersionManager({
         <button
           type="button"
           onClick={handleCreateVersion}
-          disabled={isPending}
+          disabled={isPending || !hasProjectVersion}
           className="rounded-lg bg-[#3182F6] px-3 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:bg-blue-600 active:scale-95 disabled:cursor-not-allowed disabled:bg-blue-200"
         >
           {isPending ? "생성 중..." : "+ 새 버전"}
         </button>
       </div>
+      {!hasProjectVersion ? (
+        <p className="mt-3 text-xs text-amber-600">프로젝트 버전이 없어 생성할 수 없습니다. 프로젝트에서 버전을 먼저 생성해 주세요.</p>
+      ) : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getProfileByName } from "@/features/profiles/data/profile-repository";
+import { assertProjectHasVersion } from "@/features/projects/data/project-repository";
 import {
 	createSwotItem,
 	deleteSwotItem,
@@ -37,6 +38,8 @@ export async function createSwotItemAction(formData: FormData) {
 	if (!createdBy) {
 		throw new Error("Profile name is required.");
 	}
+
+	await assertProjectHasVersion(projectId);
 
 	const profile = await getProfileByName(createdBy);
 	if (!profile) {

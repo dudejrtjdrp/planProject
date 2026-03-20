@@ -5,6 +5,7 @@ import type { PestelItem, PestelFactor } from "@/features/pestel/types/pestel-it
 type PestelFactorSectionProps = {
   projectId: string;
   projectFrameworkId: string | null;
+  canCreate: boolean;
   factor: PestelFactor;
   factorId?: string;
   label: string;
@@ -17,6 +18,7 @@ type PestelFactorSectionProps = {
 export function PestelFactorSection({
   projectId,
   projectFrameworkId,
+  canCreate,
   factor,
   label,
   description,
@@ -41,6 +43,7 @@ export function PestelFactorSection({
       <PestelCreateForm
         projectId={projectId}
         projectFrameworkId={projectFrameworkId}
+        canCreate={canCreate}
         factor={factor}
         placeholder={`${label} 요인을 입력하세요`}
       />

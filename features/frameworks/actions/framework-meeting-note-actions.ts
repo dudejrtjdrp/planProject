@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { frameworkKeys, type FrameworkKey } from "@/features/frameworks/types/framework";
 import { getProfileByName } from "@/features/profiles/data/profile-repository";
+import { assertProjectHasVersion } from "@/features/projects/data/project-repository";
 import {
   createFrameworkMeetingNote,
   deleteFrameworkMeetingNote,
@@ -43,6 +44,8 @@ export async function createFrameworkMeetingNoteAction(formData: FormData) {
   if (!createdBy) {
     throw new Error("프로필을 먼저 선택해 주세요.");
   }
+
+  await assertProjectHasVersion(projectId);
 
   const profile = await getProfileByName(createdBy);
   if (!profile) {

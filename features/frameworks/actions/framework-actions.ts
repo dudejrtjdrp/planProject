@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { attachFrameworkToProject, getFrameworkById, updateFrameworkTitle } from "@/features/frameworks/data/framework-repository";
 import { clonePestelItemsToFramework } from "@/features/pestel/data/pestel-repository";
+import { assertProjectHasVersion } from "@/features/projects/data/project-repository";
 import { cloneSwotItemsToFramework } from "@/features/swot/data/swot-repository";
 import type { FrameworkKey } from "@/features/frameworks/types/framework";
 
@@ -22,6 +23,9 @@ function revalidateFrameworkPath(projectId: string, frameworkKey: FrameworkKey) 
   if (frameworkKey === "PERSONA_MODEL") {
     revalidatePath(`/project/${projectId}/persona-model`);
   }
+  if (frameworkKey === "COMPETITOR_MAPPING") {
+    revalidatePath(`/project/${projectId}/3c-analysis`);
+  }
 }
 
 export async function createFrameworkVersionAction(
@@ -32,6 +36,8 @@ export async function createFrameworkVersionAction(
   if (!projectId) {
     throw new Error("Project id is required.");
   }
+
+  await assertProjectHasVersion(projectId);
 
   const framework = await attachFrameworkToProject(projectId, frameworkKey);
 

@@ -13,6 +13,7 @@ type SwotBoardProps = {
   projectId: string;
   projectFrameworkId: string | null;
   currentVersion: number | null;
+  canCreate: boolean;
   items: SwotItem[];
   profiles: Profile[];
 };
@@ -66,7 +67,7 @@ function toFlatItems(grouped: Record<SwotType, SwotItem[]>): SwotItem[] {
   return [...grouped.STRENGTH, ...grouped.WEAKNESS, ...grouped.OPPORTUNITY, ...grouped.THREAT];
 }
 
-export function SwotBoard({ projectId, projectFrameworkId, currentVersion, items, profiles }: SwotBoardProps) {
+export function SwotBoard({ projectId, projectFrameworkId, currentVersion, canCreate, items, profiles }: SwotBoardProps) {
   const [isPending, startTransition] = useTransition();
   const [boardItems, setBoardItems] = useState<SwotItem[]>(items);
   const pendingMutationIdsRef = useRef<Set<string>>(new Set());
@@ -253,6 +254,7 @@ export function SwotBoard({ projectId, projectFrameworkId, currentVersion, items
               key={quadrant.type}
               projectId={projectId}
               projectFrameworkId={projectFrameworkId}
+              canCreate={canCreate}
               type={quadrant.type}
               title={quadrant.title}
               description={quadrant.description}

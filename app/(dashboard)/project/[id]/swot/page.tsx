@@ -4,7 +4,7 @@ import { BackStepButton } from "@/components/ui/back-step-button";
 import { FrameworkVersionManager } from "@/components/ui/framework-version-manager";
 import { getFrameworkByKey, getFrameworkByVersion, getFrameworkVersionsByKey } from "@/features/frameworks/data/framework-repository";
 import { getProfiles } from "@/features/profiles/data/profile-repository";
-import { getProjectById } from "@/features/projects/data/project-repository";
+import { getProjectById, getProjectVersions } from "@/features/projects/data/project-repository";
 import { getSwotItemsByFrameworkId } from "@/features/swot/data/swot-repository";
 
 type ProjectSwotPageProps = {
@@ -19,7 +19,8 @@ export default async function ProjectSwotPage({ params, searchParams }: ProjectS
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const selectedVersion = Number.parseInt(resolvedSearchParams?.fv ?? "", 10);
   const selectedProjectVersion = Number.parseInt(resolvedSearchParams?.pv ?? "", 10);
-  const project = await getProjectById(id);
+  const [project, projectVersions] = await Promise.all([getProjectById(id), getProjectVersions(id)]);
+  const hasProjectVersion = projectVersions.length > 0;
 
   if (!project) {
     redirect("/projects");
@@ -73,6 +74,7 @@ export default async function ProjectSwotPage({ params, searchParams }: ProjectS
         frameworkKey="SWOT"
         basePath={`/project/${id}/swot`}
         projectVersion={Number.isFinite(selectedProjectVersion) ? selectedProjectVersion : null}
+        hasProjectVersion={hasProjectVersion}
         currentFrameworkId={swotFramework?.id ?? null}
         currentVersion={swotFramework?.version ?? null}
         versions={frameworkVersions}
@@ -83,6 +85,7 @@ export default async function ProjectSwotPage({ params, searchParams }: ProjectS
         projectId={id}
         projectFrameworkId={swotFramework?.id ?? null}
         currentVersion={swotFramework?.version ?? null}
+        canCreate={hasProjectVersion}
         items={swotItems}
         profiles={profiles}
       />

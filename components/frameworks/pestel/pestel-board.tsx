@@ -12,6 +12,7 @@ type PestelBoardProps = {
   projectId: string;
   projectFrameworkId: string | null;
   currentVersion: number | null;
+  canCreate: boolean;
   items: PestelItem[];
   profiles: Profile[];
 };
@@ -90,7 +91,7 @@ function toPestelOrderPayload(grouped: Record<PestelFactor, PestelItem[]>) {
   );
 }
 
-export function PestelBoard({ projectId, projectFrameworkId, currentVersion, items, profiles }: PestelBoardProps) {
+export function PestelBoard({ projectId, projectFrameworkId, currentVersion, canCreate, items, profiles }: PestelBoardProps) {
   const [isPending, startTransition] = useTransition();
   const [boardItems, setBoardItems] = useState<PestelItem[]>(items);
 
@@ -219,6 +220,7 @@ export function PestelBoard({ projectId, projectFrameworkId, currentVersion, ite
               key={f.factor}
               projectId={projectId}
               projectFrameworkId={projectFrameworkId}
+              canCreate={canCreate}
               factor={f.factor}
               factorId={getFactorId(f.factor)}
               label={f.label}

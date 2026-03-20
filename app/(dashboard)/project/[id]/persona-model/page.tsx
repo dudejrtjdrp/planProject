@@ -7,7 +7,7 @@ import {
 	getFrameworkByVersion,
 	getFrameworkVersionsByKey,
 } from "@/features/frameworks/data/framework-repository";
-import { getProjectById } from "@/features/projects/data/project-repository";
+import { getProjectById, getProjectVersions } from "@/features/projects/data/project-repository";
 
 type PageProps = {
 	params: Promise<{ id: string }>;
@@ -56,7 +56,8 @@ export default async function ProjectPersonaModelPage({ params, searchParams }: 
 	const selectedVersion = Number.parseInt(resolvedSearchParams?.fv ?? "", 10);
 	const selectedProjectVersion = Number.parseInt(resolvedSearchParams?.pv ?? "", 10);
 
-	const project = await getProjectById(id);
+	const [project, projectVersions] = await Promise.all([getProjectById(id), getProjectVersions(id)]);
+	const hasProjectVersion = projectVersions.length > 0;
 	if (!project) {
 		redirect("/projects");
 	}
@@ -111,6 +112,7 @@ export default async function ProjectPersonaModelPage({ params, searchParams }: 
 				frameworkKey="PERSONA_MODEL"
 				basePath={`/project/${id}/persona-model`}
 				projectVersion={Number.isFinite(selectedProjectVersion) ? selectedProjectVersion : null}
+				hasProjectVersion={hasProjectVersion}
 				currentFrameworkId={framework?.id ?? null}
 				currentVersion={framework?.version ?? null}
 				versions={frameworkVersions}

@@ -21,6 +21,7 @@ type PageProps = {
     mck7sV?: string;
     matrixV?: string;
     personaV?: string;
+    threeCV?: string;
   }>;
 };
 
@@ -46,6 +47,35 @@ type PersonaData = {
   needs: string;
   motivations: string;
   photoUrl?: string;
+};
+
+type ThreeCData = {
+  customer: {
+    headline: string;
+    targetSegment: string;
+    needs: string;
+    painPoints: string;
+    buyingBehavior: string;
+  };
+  company: {
+    headline: string;
+    coreStrength: string;
+    resources: string;
+    differentiation: string;
+    internalCapabilities: string;
+  };
+  competitor: {
+    headline: string;
+    keyPlayers: string;
+    marketPosition: string;
+    strengths: string;
+    weaknesses: string;
+  };
+  strategicInsight: {
+    alignmentOrMismatch: string;
+    competitiveAdvantage: string;
+    strategicDirection: string;
+  };
 };
 
 function parseSevenS(raw: string | null): SevenSData {
@@ -99,6 +129,50 @@ function parsePersona(raw: string | null): PersonaData {
   if (!raw) return d;
   try { return { ...d, ...(JSON.parse(raw) as Partial<PersonaData>) }; } catch { return d; }
 }
+function parseThreeC(raw: string | null): ThreeCData {
+  const d: ThreeCData = {
+    customer: {
+      headline: "",
+      targetSegment: "",
+      needs: "",
+      painPoints: "",
+      buyingBehavior: "",
+    },
+    company: {
+      headline: "",
+      coreStrength: "",
+      resources: "",
+      differentiation: "",
+      internalCapabilities: "",
+    },
+    competitor: {
+      headline: "",
+      keyPlayers: "",
+      marketPosition: "",
+      strengths: "",
+      weaknesses: "",
+    },
+    strategicInsight: {
+      alignmentOrMismatch: "",
+      competitiveAdvantage: "",
+      strategicDirection: "",
+    },
+  };
+
+  if (!raw) return d;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<ThreeCData>;
+    return {
+      customer: { ...d.customer, ...(parsed.customer ?? {}) },
+      company: { ...d.company, ...(parsed.company ?? {}) },
+      competitor: { ...d.competitor, ...(parsed.competitor ?? {}) },
+      strategicInsight: { ...d.strategicInsight, ...(parsed.strategicInsight ?? {}) },
+    };
+  } catch {
+    return d;
+  }
+}
 
 export default async function ProjectReportPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -109,6 +183,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
   const selectedMck7sV   = Number.parseInt(sp.mck7sV   ?? "", 10);
   const selectedMatrixV  = Number.parseInt(sp.matrixV  ?? "", 10);
   const selectedPersonaV = Number.parseInt(sp.personaV ?? "", 10);
+  const selectedThreeCV  = Number.parseInt(sp.threeCV  ?? "", 10);
 
   const [project, projectVersions] = await Promise.all([getProjectById(id), getProjectVersions(id)]);
   if (!project) redirect("/projects");
@@ -129,12 +204,13 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
     }
   }
 
-  const [swotVersions, pestelVersions, mck7sVersions, matrixVersions, personaVersions, profiles] = await Promise.all([
+  const [swotVersions, pestelVersions, mck7sVersions, matrixVersions, personaVersions, threeCVersions, profiles] = await Promise.all([
     getFrameworkVersionsByKey(id, "SWOT"),
     getFrameworkVersionsByKey(id, "PESTEL"),
     getFrameworkVersionsByKey(id, "MCKINSEY_7S"),
     getFrameworkVersionsByKey(id, "MATRIX_2X2"),
     getFrameworkVersionsByKey(id, "PERSONA_MODEL"),
+    getFrameworkVersionsByKey(id, "COMPETITOR_MAPPING"),
     getProfiles(),
   ]);
 
@@ -146,12 +222,13 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
         ? Promise.resolve(versions[0])
         : getFrameworkByKey(id, key);
 
-  const [swotFw, pestelFw, mck7sFw, matrixFw, personaFw] = await Promise.all([
+  const [swotFw, pestelFw, mck7sFw, matrixFw, personaFw, threeCFw] = await Promise.all([
     resolveFw(swotVersions,    "SWOT",          selectedSwotV),
     resolveFw(pestelVersions,  "PESTEL",         selectedPestelV),
     resolveFw(mck7sVersions,   "MCKINSEY_7S",   selectedMck7sV),
     resolveFw(matrixVersions,  "MATRIX_2X2",    selectedMatrixV),
     resolveFw(personaVersions, "PERSONA_MODEL", selectedPersonaV),
+    resolveFw(threeCVersions,  "COMPETITOR_MAPPING", selectedThreeCV),
   ]);
 
   const [swotItems, pestelItems] = await Promise.all([
@@ -162,6 +239,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
   const sevenSData  = parseSevenS(mck7sFw?.title   ?? null);
   const matrixData  = parseMatrix(matrixFw?.title   ?? null);
   const personaData = parsePersona(personaFw?.title ?? null);
+  const threeCData  = parseThreeC(threeCFw?.title ?? null);
 
   const pvParam = Number.isFinite(selectedPv) ? `?pv=${selectedPv}` : "";
 
@@ -225,6 +303,11 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
     };
   }
 
+  function getSevenSSummaryText(node: SevenSData[keyof SevenSData]) {
+    const text = (node.title.trim() || node.description.trim() || "내용 없음").replace(/\s+/g, " ");
+    return text.length > 30 ? `${text.slice(0, 30)}...` : text;
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 print:bg-white">
       <div className="mx-auto max-w-6xl space-y-14 py-12 print:space-y-8 print:py-4">
@@ -249,7 +332,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
           <h1 className="text-4xl font-bold tracking-tight text-gray-900">{projectName}</h1>
           <p className="text-gray-500">{projectDescription}</p>
           <nav className="flex flex-wrap gap-2 pt-2 print:hidden">
-            {(["team", "swot", "pestel", "mckinsey-7s", "double-matrix", "persona"] as const).map((a) => (
+            {(["team", "swot", "pestel", "mckinsey-7s", "double-matrix", "three-c", "persona"] as const).map((a) => (
               <a
                 key={a}
                 href={`#${a}`}
@@ -261,6 +344,8 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
                     ? "McKinsey 7S"
                     : a === "double-matrix"
                       ? "Double Matrix"
+                      : a === "three-c"
+                        ? "3C Analysis"
                       : a.charAt(0).toUpperCase() + a.slice(1)}
               </a>
             ))}
@@ -268,14 +353,14 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
         </section>
 
         {/* Team */}
-        <section id="team" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm">
+        <section id="team" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm print:break-inside-avoid print:[page-break-inside:avoid]">
           <p className="mb-6 text-sm font-semibold uppercase tracking-wide text-gray-400">Team Introduction</p>
           {profiles.length === 0 ? (
             <p className="text-sm text-gray-400">등록된 팀원이 없습니다.</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               {profiles.map((m) => (
-                <article key={m.id} className="rounded-2xl bg-gray-50 p-5">
+                <article key={m.id} className="rounded-2xl bg-gray-50 p-5 print:break-inside-avoid print:[page-break-inside:avoid]">
                   <div className="flex items-center gap-3">
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: m.avatarColor }} />
                     <p className="font-semibold text-gray-900">{m.name}</p>
@@ -287,7 +372,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
         </section>
 
         {/* SWOT */}
-        <section id="swot" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm">
+        <section id="swot" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm print:break-inside-avoid print:[page-break-inside:avoid]">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">SWOT Analysis</p>
@@ -309,7 +394,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
             ]).map(({ label, type, bg }) => {
               const items = swotItems.filter((i) => i.type === type);
               return (
-                <article key={label} className={`rounded-2xl p-6 ${bg}`}>
+                <article key={label} className={`rounded-2xl p-6 print:break-inside-avoid print:[page-break-inside:avoid] ${bg}`}>
                   <h3 className="font-semibold text-gray-900">{label}</h3>
                   {items.length ? (
                     <ul className="mt-3 space-y-1 text-sm text-gray-700">
@@ -330,7 +415,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
         </section>
 
         {/* PESTEL */}
-        <section id="pestel" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm">
+        <section id="pestel" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm print:break-inside-avoid print:[page-break-inside:avoid]">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">PESTEL Analysis</p>
@@ -347,7 +432,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
             {pestelFactors.map(({ factor, label, bar }) => {
               const items = pestelItems.filter((i) => i.factor === factor);
               return (
-                <div key={factor} className="relative overflow-hidden rounded-2xl bg-gray-50 p-5">
+                <div key={factor} className="relative overflow-hidden rounded-2xl bg-gray-50 p-5 print:break-inside-avoid print:[page-break-inside:avoid]">
                   <span className={`absolute left-0 top-0 h-full w-1 ${bar}`} />
                   <div className="grid items-start gap-6 pl-3" style={{ gridTemplateColumns: "140px 1fr" }}>
                     <h3 className="font-semibold text-gray-900">{label}</h3>
@@ -371,7 +456,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
         </section>
 
         {/* McKinsey 7S */}
-        <section id="mckinsey-7s" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm">
+        <section id="mckinsey-7s" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm print:break-inside-avoid print:[page-break-inside:avoid]">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">McKinsey 7S</p>
@@ -385,13 +470,13 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
             />
           </div>
 
-          <div className="hidden md:block">
-            <div className="relative mx-auto aspect-square w-full max-w-5xl">
+          <div className="overflow-x-auto pb-2">
+            <div className="relative mx-auto aspect-square w-full min-w-[680px] max-w-5xl">
               <div className="absolute inset-0 z-10">
                 {sevenSLayout.map((node) => (
                   <div
                     key={`center-line-${node.key}`}
-                    className="absolute h-px bg-gray-300/20 print:bg-gray-300/30"
+                    className="absolute h-px bg-gray-400/40 print:bg-gray-300/30"
                     style={getCenterLineStyle(node.x, node.y)}
                   />
                 ))}
@@ -400,7 +485,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
                   return (
                     <div
                       key={`outer-line-${node.key}-${nextNode.key}`}
-                      className="absolute h-px bg-gray-300/15 print:bg-gray-300/25"
+                      className="absolute h-px bg-gray-300/35 print:bg-gray-300/25"
                       style={getSegmentLineStyle(node, nextNode)}
                     />
                   );
@@ -410,51 +495,45 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
               {sevenSLayout.map((node) => (
                 <article
                   key={node.key}
-                  className="absolute z-20 flex h-52 w-52 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-gray-200 bg-white p-5 text-center shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+                  className="absolute z-20 flex h-44 w-44 -translate-x-1/2 -translate-y-1/2 break-inside-avoid flex-col items-center justify-center rounded-full border border-gray-300 bg-white px-5 text-center shadow-sm transition-all duration-200 hover:scale-[1.04] hover:border-gray-400 hover:shadow-md sm:h-48 sm:w-48"
                   style={{ left: `${node.x}%`, top: `${node.y}%` }}
                 >
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{node.label}</p>
-                  {sevenSData[node.key].title ? (
-                    <p className="text-xs font-semibold text-gray-800">{sevenSData[node.key].title}</p>
-                  ) : null}
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData[node.key].description || "-"}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">{node.label}</p>
+                  <p className="mt-2 line-clamp-2 max-w-[130px] text-xs text-gray-500">{getSevenSSummaryText(sevenSData[node.key])}</p>
                 </article>
               ))}
 
-              <article className="absolute left-1/2 top-1/2 z-30 flex h-72 w-72 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-2 border-blue-200 bg-blue-50 p-8 text-center shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
+              <article className="absolute left-1/2 top-1/2 z-30 flex h-60 w-60 -translate-x-1/2 -translate-y-1/2 break-inside-avoid flex-col items-center justify-center rounded-full border-4 border-blue-200 bg-blue-50/70 px-7 text-center shadow-sm transition-all duration-200 hover:scale-[1.04] hover:shadow-md sm:h-64 sm:w-64">
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Shared Values</p>
-                {sevenSData.sharedValues.title ? (
-                  <p className="mt-2 text-xs font-semibold text-blue-800">{sevenSData.sharedValues.title}</p>
-                ) : null}
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData.sharedValues.description || "-"}</p>
+                <p className="mt-2 line-clamp-2 max-w-[170px] text-sm text-blue-900/80">
+                  {getSevenSSummaryText(sevenSData.sharedValues)}
+                </p>
               </article>
             </div>
           </div>
 
-          <div className="space-y-4 md:hidden">
-            <article className="rounded-3xl border-2 border-blue-200 bg-blue-50 p-5 shadow-sm">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">Shared Values</p>
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <article className="rounded-2xl border border-blue-200 bg-blue-50 p-4 print:break-inside-avoid print:[page-break-inside:avoid]">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700">Shared Values</p>
               {sevenSData.sharedValues.title ? (
-                <p className="text-xs font-semibold text-blue-800">{sevenSData.sharedValues.title}</p>
+                <p className="text-xs font-semibold text-blue-900">{sevenSData.sharedValues.title}</p>
               ) : null}
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData.sharedValues.description || "-"}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData.sharedValues.description || "-"}</p>
             </article>
-            <div className="grid grid-cols-2 gap-3">
-              {sevenSNodes.map((node) => (
-                <article key={`mobile-${node.key}`} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{node.label}</p>
-                  {sevenSData[node.key].title ? (
-                    <p className="text-xs font-semibold text-gray-800">{sevenSData[node.key].title}</p>
-                  ) : null}
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData[node.key].description || "-"}</p>
-                </article>
-              ))}
-            </div>
+            {sevenSNodes.map((node) => (
+              <article key={`detail-${node.key}`} className="rounded-2xl border border-gray-200 bg-gray-50 p-4 print:break-inside-avoid print:[page-break-inside:avoid]">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-600">{node.label}</p>
+                {sevenSData[node.key].title ? (
+                  <p className="text-xs font-semibold text-gray-900">{sevenSData[node.key].title}</p>
+                ) : null}
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sevenSData[node.key].description || "-"}</p>
+              </article>
+            ))}
           </div>
         </section>
 
         {/* Double Matrix */}
-        <section id="double-matrix" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm">
+        <section id="double-matrix" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm print:break-inside-avoid print:[page-break-inside:avoid]">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">Double Matrix</p>
@@ -479,7 +558,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
               { key: "q3" as const, label: "Q3", bg: "bg-yellow-50" },
               { key: "q4" as const, label: "Q4", bg: "bg-red-50"    },
             ]).map(({ key, label, bg }) => (
-              <article key={key} className={`rounded-2xl p-5 ${bg}`}>
+              <article key={key} className={`rounded-2xl p-5 print:break-inside-avoid print:[page-break-inside:avoid] ${bg}`}>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{matrixData[key] || "-"}</p>
               </article>
@@ -492,8 +571,68 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
           )}
         </section>
 
+        {/* 3C Analysis */}
+        <section id="three-c" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm print:break-inside-avoid print:[page-break-inside:avoid] print:rounded-2xl print:p-6 print:shadow-none">
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">3C Analysis</p>
+              <h2 className="mt-1 text-3xl font-bold tracking-tight text-gray-900">Customer · Company · Competitor</h2>
+            </div>
+            <ReportVersionSelector
+              label="버전"
+              paramKey="threeCV"
+              currentVersion={threeCFw?.version ?? null}
+              versions={threeCVersions}
+            />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3 print:grid-cols-1 print:gap-3">
+            <article className="rounded-2xl border border-gray-200 bg-gray-50 p-5 print:break-inside-avoid print:[page-break-inside:avoid] print:bg-gray-100 print:p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">Customer</p>
+              <p className="mb-3 text-sm font-semibold text-gray-900 print:mb-2">{threeCData.customer.headline || "-"}</p>
+              <ul className="space-y-2 text-sm leading-relaxed text-gray-700 print:space-y-1.5 print:text-xs">
+                <li><span className="font-semibold">타깃 세그먼트:</span> {threeCData.customer.targetSegment || "-"}</li>
+                <li><span className="font-semibold">핵심 니즈:</span> {threeCData.customer.needs || "-"}</li>
+                <li><span className="font-semibold">페인 포인트:</span> {threeCData.customer.painPoints || "-"}</li>
+                <li><span className="font-semibold">구매 행동:</span> {threeCData.customer.buyingBehavior || "-"}</li>
+              </ul>
+            </article>
+
+            <article className="rounded-2xl border border-gray-200 bg-gray-50 p-5 print:break-inside-avoid print:[page-break-inside:avoid] print:bg-gray-100 print:p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">Company</p>
+              <p className="mb-3 text-sm font-semibold text-gray-900 print:mb-2">{threeCData.company.headline || "-"}</p>
+              <ul className="space-y-2 text-sm leading-relaxed text-gray-700 print:space-y-1.5 print:text-xs">
+                <li><span className="font-semibold">핵심 강점:</span> {threeCData.company.coreStrength || "-"}</li>
+                <li><span className="font-semibold">보유 자원:</span> {threeCData.company.resources || "-"}</li>
+                <li><span className="font-semibold">차별화 요소:</span> {threeCData.company.differentiation || "-"}</li>
+                <li><span className="font-semibold">내부 역량:</span> {threeCData.company.internalCapabilities || "-"}</li>
+              </ul>
+            </article>
+
+            <article className="rounded-2xl border border-gray-200 bg-gray-50 p-5 print:break-inside-avoid print:[page-break-inside:avoid] print:bg-gray-100 print:p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-700">Competitor</p>
+              <p className="mb-3 text-sm font-semibold text-gray-900 print:mb-2">{threeCData.competitor.headline || "-"}</p>
+              <ul className="space-y-2 text-sm leading-relaxed text-gray-700 print:space-y-1.5 print:text-xs">
+                <li><span className="font-semibold">주요 경쟁사:</span> {threeCData.competitor.keyPlayers || "-"}</li>
+                <li><span className="font-semibold">시장 포지셔닝:</span> {threeCData.competitor.marketPosition || "-"}</li>
+                <li><span className="font-semibold">강점:</span> {threeCData.competitor.strengths || "-"}</li>
+                <li><span className="font-semibold">약점:</span> {threeCData.competitor.weaknesses || "-"}</li>
+              </ul>
+            </article>
+          </div>
+
+          <article className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-6 print:break-inside-avoid print:[page-break-inside:avoid] print:mt-3 print:p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">Strategic Insight</p>
+            <ul className="space-y-2 text-sm leading-relaxed text-gray-700 print:space-y-1.5 print:text-xs">
+              <li><span className="font-semibold">정렬 / 불일치:</span> {threeCData.strategicInsight.alignmentOrMismatch || "-"}</li>
+              <li><span className="font-semibold">경쟁 우위:</span> {threeCData.strategicInsight.competitiveAdvantage || "-"}</li>
+              <li><span className="font-semibold">전략 방향:</span> {threeCData.strategicInsight.strategicDirection || "-"}</li>
+            </ul>
+          </article>
+        </section>
+
         {/* Persona Model */}
-        <section id="persona" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm">
+        <section id="persona" className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm print:break-inside-avoid print:[page-break-inside:avoid]">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">Persona Model</p>
@@ -506,7 +645,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
               versions={personaVersions}
             />
           </div>
-          <div className="mb-6 flex items-center gap-5 rounded-2xl bg-gray-50 p-6">
+          <div className="mb-6 flex items-center gap-5 rounded-2xl bg-gray-50 p-6 print:break-inside-avoid print:[page-break-inside:avoid]">
             {personaData.photoUrl ? (
               <img src={personaData.photoUrl} alt="persona" className="h-20 w-20 rounded-full object-cover shadow" />
             ) : (
@@ -525,7 +664,7 @@ export default async function ProjectReportPage({ params, searchParams }: PagePr
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {(["goals", "painPoints", "behaviors", "needs", "motivations"] as (keyof PersonaData)[]).map((key) => (
-              <article key={key} className="rounded-2xl bg-gray-50 p-5">
+              <article key={key} className="rounded-2xl bg-gray-50 p-5 print:break-inside-avoid print:[page-break-inside:avoid]">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                   {key === "painPoints" ? "Pain Points" : key.charAt(0).toUpperCase() + key.slice(1)}
                 </p>

@@ -75,6 +75,32 @@ export async function createProjectMeetingNote(input: {
   return mapProjectMeetingNoteRow(data as ProjectMeetingNoteRow);
 }
 
+export async function updateProjectMeetingNote(input: {
+  noteId: string;
+  title: string;
+  content: string;
+  meetingDate: string;
+}): Promise<ProjectMeetingNote> {
+  const supabase = createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("framework_meeting_notes")
+    .update({
+      title: input.title,
+      content: input.content,
+      meeting_date: input.meetingDate,
+    })
+    .eq("id", input.noteId)
+    .select("id, project_id, framework_key, title, content, meeting_date, created_by, created_at, updated_at")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update project meeting note: ${error.message}`);
+  }
+
+  return mapProjectMeetingNoteRow(data as ProjectMeetingNoteRow);
+}
+
 export async function deleteProjectMeetingNote(noteId: string): Promise<void> {
   const supabase = createSupabaseServerClient();
   const { error } = await supabase.from("framework_meeting_notes").delete().eq("id", noteId);

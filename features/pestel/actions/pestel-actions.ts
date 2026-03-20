@@ -9,6 +9,7 @@ import {
   updatePestelItemContent,
   updatePestelItemsOrder,
 } from "@/features/pestel/data/pestel-repository";
+import { assertProjectHasVersion } from "@/features/projects/data/project-repository";
 import { pestelFactors, type PestelFactor } from "@/features/pestel/types/pestel-item";
 
 const PESTEL_ATTACHMENT_BUCKET = "pestel-attachments";
@@ -68,6 +69,8 @@ export async function createPestelItemAction(formData: FormData) {
   if (!isPestelFactor(factor)) throw new Error("Invalid PESTEL factor.");
   if (!content) throw new Error("PESTEL content is required.");
   if (!createdBy) throw new Error("Profile name is required.");
+
+  await assertProjectHasVersion(projectId);
 
   let attachmentFile: File | null = null;
   if (attachmentRaw instanceof File && attachmentRaw.size > 0) {

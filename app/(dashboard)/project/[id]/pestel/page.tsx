@@ -4,7 +4,7 @@ import { BackStepButton } from "@/components/ui/back-step-button";
 import { FrameworkVersionManager } from "@/components/ui/framework-version-manager";
 import { getFrameworkByKey, getFrameworkByVersion, getFrameworkVersionsByKey } from "@/features/frameworks/data/framework-repository";
 import { getProfiles } from "@/features/profiles/data/profile-repository";
-import { getProjectById } from "@/features/projects/data/project-repository";
+import { getProjectById, getProjectVersions } from "@/features/projects/data/project-repository";
 import { getPestelItemsByFrameworkId } from "@/features/pestel/data/pestel-repository";
 
 type ProjectPestelPageProps = {
@@ -19,7 +19,8 @@ export default async function ProjectPestelPage({ params, searchParams }: Projec
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const selectedVersion = Number.parseInt(resolvedSearchParams?.fv ?? "", 10);
   const selectedProjectVersion = Number.parseInt(resolvedSearchParams?.pv ?? "", 10);
-  const project = await getProjectById(id);
+  const [project, projectVersions] = await Promise.all([getProjectById(id), getProjectVersions(id)]);
+  const hasProjectVersion = projectVersions.length > 0;
 
   if (!project) {
     redirect("/projects");
@@ -75,6 +76,7 @@ export default async function ProjectPestelPage({ params, searchParams }: Projec
         frameworkKey="PESTEL"
         basePath={`/project/${id}/pestel`}
         projectVersion={Number.isFinite(selectedProjectVersion) ? selectedProjectVersion : null}
+        hasProjectVersion={hasProjectVersion}
         currentFrameworkId={pestelFramework?.id ?? null}
         currentVersion={pestelFramework?.version ?? null}
         versions={frameworkVersions}
@@ -85,6 +87,7 @@ export default async function ProjectPestelPage({ params, searchParams }: Projec
         projectId={id}
         projectFrameworkId={pestelFramework?.id ?? null}
         currentVersion={pestelFramework?.version ?? null}
+        canCreate={hasProjectVersion}
         items={pestelItems}
         profiles={profiles}
       />

@@ -3,6 +3,8 @@ import { ProjectVersionManager } from "@/components/ui/project-version-manager";
 import { ProjectSummary } from "@/features/projects/components/project-summary";
 import { getProjectById, getProjectVersion, getProjectVersions } from "@/features/projects/data/project-repository";
 
+export const dynamic = "force-dynamic";
+
 type ProjectDetailPageProps = {
   params: Promise<{
     id: string;
@@ -60,6 +62,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
         projectId={id}
         currentVersion={Number.isFinite(selectedProjectVersion) ? selectedProjectVersion : null}
         versions={versions}
+        currentProjectUpdatedAt={project.updatedAt}
       />
       <ProjectSummary
         project={projectForView}

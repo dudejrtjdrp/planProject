@@ -9,6 +9,7 @@ import type { SwotItem, SwotType } from "@/features/swot/types/swot-item";
 type SwotQuadrantProps = {
   projectId: string;
   projectFrameworkId: string | null;
+  canCreate: boolean;
   type: SwotType;
   title: string;
   description: string;
@@ -20,6 +21,7 @@ type SwotQuadrantProps = {
 export function SwotQuadrant({
   projectId,
   projectFrameworkId,
+  canCreate,
   type,
   title,
   description,
@@ -49,6 +51,7 @@ export function SwotQuadrant({
       <SwotCreateForm
         projectId={projectId}
         projectFrameworkId={projectFrameworkId}
+        canCreate={canCreate}
         type={type}
         placeholder={`${title} \uc544\uc774\ud15c\uc744 \uc785\ub825\ud558\uc138\uc694`}
       />
